@@ -22,6 +22,8 @@
         +--> MCP (Claude Code·Codex에서 도구로)
 ```
 
+단계마다 무엇을 읽고 쓰는지, 상태를 어떻게 정하는지는 [추출 방식](docs/extraction.md)에 있다.
+
 - **문서 페이지**: 엔드포인트마다 요청·응답 필드, 이어지는 HTTP 호출과 메시지 발행·구독, 오류 응답, 업무 규칙·함정이 나온다.
 - **되살리기 페이지**: 저장소만 남았을 때 띄우는 데 필요한 것(외부 자원·외부 API, 채워야 할 환경변수, 저장소 밖 비밀값, 컨테이너, 띄울 때 확인할 연결, 운영 함정)을 한곳에 모은다.
 - **검색·질의응답**: 문서를 BM25와 임베딩으로 찾고, 찾은 조각 안에서만 답한다. 근거가 없으면 답하지 않고 보류한다.
@@ -116,7 +118,7 @@ get_page("/revival")
 | 게이트웨이 | Spring Cloud Gateway, Eureka | Spring Security `permitAll` | |
 | 그 밖 | | | 회로 차단기 fallback, 재시도(`unsupported`로 남음) |
 
-빌드는 Gradle(Groovy·Kotlin DSL)과 Maven, 설정은 `application*.yml`·`yaml`·`properties`, 코드는 Java를 읽는다. 저장소 하나에 서비스가 모인 구성을 전제한다.
+빌드는 Gradle(Groovy·Kotlin DSL)과 Maven, 설정은 `application*.yml`·`yaml`·`properties`, 코드는 Java를 읽는다. 저장소 하나에 서비스가 모인 구성을 전제한다. 영역별로 어디까지 확인했고 무엇이 남았는지는 [추출 방식](docs/extraction.md#5-영역별-확인-정도)에 있다.
 
 ### 다른 구성에 맞추려면 고칠 곳
 
