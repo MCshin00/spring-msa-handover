@@ -22,12 +22,12 @@
         +--> MCP (Claude Code·Codex에서 도구로)
 ```
 
-단계마다 무엇을 읽고 쓰는지, 상태를 어떻게 정하는지는 [추출 방식](docs/extraction.md)에 있다.
+왜 이렇게 만들었고 무엇을 찾아냈는지는 [설계 개요](docs/overview.md)에, 단계마다 무엇을 읽고 쓰는지와 상태를 어떻게 정하는지는 [추출 방식](docs/extraction.md)에 있다.
 
 - **문서 페이지**: 엔드포인트마다 요청·응답 필드, 이어지는 HTTP 호출과 메시지 발행·구독, 오류 응답, 업무 규칙·함정이 나온다.
 - **되살리기 페이지**: 저장소만 남았을 때 띄우는 데 필요한 것(외부 자원·외부 API, 채워야 할 환경변수, 저장소 밖 비밀값, 컨테이너, 띄울 때 확인할 연결, 운영 함정)을 한곳에 모은다.
-- **검색·질의응답**: 문서를 BM25와 임베딩으로 찾고, 찾은 조각 안에서만 답한다. 근거가 없으면 답하지 않고 보류한다.
-- **MCP**: 문서 검색·페이지 읽기에 더해, 엔드포인트에서 HTTP 호출·메시지 흐름을 따라가는 도구를 Claude Code·Codex에 연다.
+- **검색·질의응답**: 문서를 BM25와 임베딩으로 찾고, 찾은 조각 안에서만 답한다. 근거가 없으면 답하지 않고 보류한다. 색인, 점수 계산, 인용 검사는 [검색과 질의응답](docs/search.md)에 있다.
+- **MCP**: 문서 검색·페이지 읽기에 더해, 엔드포인트에서 HTTP 호출·메시지 흐름을 따라가는 도구를 Claude Code·Codex에 연다. 질의응답과의 차이와 써 본 결과는 [MCP](docs/mcp.md)에 있다.
 
 | 첫 화면 | 엔드포인트 페이지 | 되살리기 페이지 |
 |---|---|---|
@@ -109,6 +109,8 @@ search_docs("쿠폰 복구")
 get_page("/revival")
 ```
 
+도구마다의 결과 형식과 전송 방식은 [MCP](docs/mcp.md), 질의응답의 흐름은 [검색과 질의응답](docs/search.md#3-질의응답)에 있다.
+
 ## 지원 범위
 
 | | 실제 저장소로 확인 | 대표 테스트로 확인 | 다루지 않음 |
@@ -118,7 +120,7 @@ get_page("/revival")
 | 게이트웨이 | Spring Cloud Gateway, Eureka | Spring Security `permitAll` | |
 | 그 밖 | | | 회로 차단기 fallback, 재시도(`unsupported`로 남음) |
 
-빌드는 Gradle(Groovy·Kotlin DSL)과 Maven, 설정은 `application*.yml`·`yaml`·`properties`, 코드는 Java를 읽는다. 저장소 하나에 서비스가 모인 구성을 전제한다. 영역별로 어디까지 확인했고 무엇이 남았는지는 [추출 방식](docs/extraction.md#5-영역별-확인-정도)에 있다.
+빌드는 Gradle(Groovy·Kotlin DSL)과 Maven, 설정은 `application*.yml`·`yaml`·`properties`, 코드는 Java를 읽는다. 저장소 하나에 서비스가 모인 구성을 전제한다. 영역별로 어디까지 확인했고 무엇이 남았는지는 [추출 방식](docs/extraction.md#6-영역별-확인-정도)에 있다.
 
 ### 다른 구성에 맞추려면 고칠 곳
 
@@ -170,6 +172,18 @@ java -jar build/handover.jar serve --workspace examples/hotdealwave
 - 결과 파일에 대상 저장소의 비밀값은 들어가지 않았다.
 
 자세한 결과는 [10단계 보고서](docs/reports/general-msa-spartahub.md)에 있다.
+
+## 문서
+
+| 문서 | 내용 |
+|---|---|
+| [설계 개요](docs/overview.md) | 다루는 문제, 기존 방법으로 부족한 점, 접근, 기술 선택, 도구가 찾아낸 것, 측정 결과 |
+| [추출 방식](docs/extraction.md) | 추출·검증 흐름, AI와 검증기의 역할, 예시 두 개, 다루는 범위, 설계 결정과 이유, 영역별 확인 정도 |
+| [검색과 질의응답](docs/search.md) | 색인, 토큰화, BM25와 RRF, 질의응답 지시문·출력 형식·인용 검사와 보류, 설계 결정과 이유, 한계와 개선할 것 |
+| [MCP](docs/mcp.md) | 질의응답과의 차이, 도구 다섯 개와 결과 형식, 전송, 설계 결정과 이유, 써 본 결과, 한계 |
+| [결정 기록](docs/decisions.md) | 정한 것과 이유의 전체 목록 |
+| [형식](docs/format/README.md) | 추출 결과와 업무 규칙·함정의 JSON 형식 |
+| [단계 보고서](docs/reports/) | 단계마다 한 일, 결과, 고친 것 |
 
 ## 개발
 
