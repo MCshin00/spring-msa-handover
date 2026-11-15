@@ -6,6 +6,8 @@ import java.util.List;
 interface AskModel {
     record Reply(String answer, List<String> citations, boolean abstain, long inputTokens, long outputTokens) {}
 
+    String name();
+
     Reply reply(String instructions, String input);
 
     /** One vector per text, in the same order. */

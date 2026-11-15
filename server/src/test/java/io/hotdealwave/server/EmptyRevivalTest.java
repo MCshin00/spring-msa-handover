@@ -27,7 +27,7 @@ class EmptyRevivalTest {
         registry.add("analysis.path", file::toString);
     }
 
-    @Autowired Pages pages;
+    @Autowired PageService pages;
 
     @Test void missingPartsSayNone() {
         String text = pages.text("/revival");

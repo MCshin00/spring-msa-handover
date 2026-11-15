@@ -36,6 +36,8 @@ class OpenAiModel implements AskModel {
         this.client = key == null || key.isBlank() ? null : OpenAIOkHttpClient.builder().apiKey(key).build();
     }
 
+    @Override public String name() { return MODEL; }
+
     @Override
     public Reply reply(String instructions, String input) {
         requireKey();
@@ -46,7 +48,7 @@ class OpenAiModel implements AskModel {
         // Take the first message that carries the structured output; an empty extra message is skipped.
         var output = response.output().stream().flatMap(item -> item.message().stream())
                 .flatMap(message -> message.content().stream()).flatMap(content -> content.outputText().stream())
-                .findFirst().orElseThrow(() -> new IllegalStateException("모델 응답에 정해진 형식의 답이 없다"));
+                .findFirst().orElseThrow(() -> new IllegalStateException(LanguageModelExceptionMessage.MISSING_ANSWER.text()));
         var usage = response.usage();
         return new Reply(output.answer(), output.citations(), output.abstain(),
                 usage.map(u -> u.inputTokens()).orElse(0L), usage.map(u -> u.outputTokens()).orElse(0L));
@@ -73,6 +75,6 @@ class OpenAiModel implements AskModel {
     }
 
     private void requireKey() {
-        if (client == null) throw new IllegalStateException("OPENAI_API_KEY 환경변수가 없어 모델을 부를 수 없다");
+        if (client == null) throw new IllegalStateException(LanguageModelExceptionMessage.MISSING_KEY.text());
     }
 }

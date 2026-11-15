@@ -13,26 +13,26 @@ import org.springframework.stereotype.Component;
 /** The verifier output, the only input of the server. */
 @Component
 class Analysis {
-    static final String CONFIRMED = "확인됨";
+    static final String CONFIRMED = FactStatus.CONFIRMED.text();
     private final JsonNode root;
 
     Analysis(@Value("${analysis.path}") String path) throws IOException {
         root = new ObjectMapper().readTree(Path.of(path).toFile());
     }
 
-    List<JsonNode> list(String key) { return listOf(root.path(key)); }
+    List<JsonNode> list(OutputKey key) { return listOf(root.path(key.text())); }
 
     static List<JsonNode> listOf(JsonNode array) { return StreamSupport.stream(array.spliterator(), false).toList(); }
 
-    JsonNode find(String key, String id) {
+    JsonNode find(OutputKey key, String id) {
         return list(key).stream().filter(n -> n.path("id").asText().equals(id)).findFirst()
                 .orElse(MissingNode.getInstance());
     }
 
-    JsonNode checks() { return root.path("checks"); }
+    JsonNode checks() { return root.path(OutputKey.CHECKS.text()); }
 
     /** Any other top-level part of the output, such as the warning codes and what "확인됨" means. */
-    JsonNode get(String key) { return root.path(key); }
+    JsonNode get(OutputKey key) { return root.path(key.text()); }
 
     /** The analysed repository and its fixed commit, from the extraction's target file. */
     record Target(String name, String repository, String commit) {
@@ -42,12 +42,12 @@ class Analysis {
     }
 
     Target target() {
-        var target = root.path("target");
+        var target = root.path(OutputKey.TARGET.text());
         return new Target(target.path("name").asText(), target.path("repository").asText(), target.path("commit").asText());
     }
 
     /** Repository-level facts (deployment, monitoring); missing when the extraction has none. */
-    JsonNode repository() { return root.path("repository"); }
+    JsonNode repository() { return root.path(OutputKey.REPOSITORY.text()); }
 
     static boolean known(JsonNode node) { return CONFIRMED.equals(node.path("status").asText()); }
 

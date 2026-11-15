@@ -39,13 +39,13 @@
 <h2 th:text="|확인 안 된 연결 ${gapCount}개|"></h2>
 <p class="note">검증기가 저장소만으로 확인하지 못한 곳이다. 이유마다 할 일이 있다.</p>
 <th:block th:each="group : ${gaps}">
-<h3 th:text="|${group.title()} ${#lists.size(group.gaps())}개|"></h3>
+<h3 th:text="|${group.title()} ${#lists.size(group.warnings())}개|"></h3>
 <p class="note" th:text="|할 일: ${group.action()}|"></p>
 <div class="table-wrap">
 <table class="list gaps">
   <thead><tr><th>종류</th><th>대상</th><th>사유</th><th>근거</th></tr></thead>
   <tbody>
-    <tr th:each="g : ${group.gaps()}">
+    <tr th:each="g : ${group.warnings()}">
       <td><span class="tag about" th:text="${g.kind()}"></span></td>
       <td><a th:if="${g.page() != null}" th:href="${g.page()}" th:text="${g.target()}"></a></td>
       <td><b class="gap-title" th:text="${g.title()}"></b><br><span th:text="${g.detail()}"></span></td>

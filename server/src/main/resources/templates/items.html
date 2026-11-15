@@ -4,19 +4,19 @@
 <section th:fragment="items(items)">
   <h2 th:text="|업무 규칙·함정 ${#lists.size(items)}개|"></h2>
   <div class="item" th:each="k : ${items}">
-    <h3><span class="tag" th:classappend="${@view.kindClass(k)}" th:text="${@view.itemTag(k)}"></span> <span th:text="${k.path('title').asText()}"></span></h3>
+    <h3><span class="tag" th:classappend="${@knowledge.kindClass(k)}" th:text="${@knowledge.itemTag(k)}"></span> <span th:text="${k.path('title').asText()}"></span></h3>
     <p th:text="${k.path('description').asText()}"></p>
     <p class="meta" th:text="|서비스 ${k.path('service').asText()} · 발견 경로 ${k.path('discoveryPath').asText()}|"></p>
-    <p class="meta" th:text="|영향 ID ${@view.texts(k.path('affectedIds'))}|"></p>
-    <p class="meta" th:text="|근거 ${@view.evidence(k)}|"></p>
+    <p class="meta" th:text="|영향 ID ${@facts.texts(k.path('affectedIds'))}|"></p>
+    <p class="meta" th:text="|근거 ${@facts.evidence(k)}|"></p>
   </div>
 </section>
 <section th:fragment="descriptions(items)" th:if="${!#lists.isEmpty(items)}">
   <h2>설명</h2>
   <div class="item" th:each="k : ${items}">
-    <h3><span class="tag" th:classappend="${@view.kindClass(k)}" th:text="${@view.itemTag(k)}"></span> <span th:text="${k.path('title').asText()}"></span></h3>
+    <h3><span class="tag" th:classappend="${@knowledge.kindClass(k)}" th:text="${@knowledge.itemTag(k)}"></span> <span th:text="${k.path('title').asText()}"></span></h3>
     <p th:text="${k.path('description').asText()}"></p>
-    <p class="meta" th:text="|영향 ID ${@view.texts(k.path('affectedIds'))} · 근거 ${@view.evidence(k)}|"></p>
+    <p class="meta" th:text="|영향 ID ${@facts.texts(k.path('affectedIds'))} · 근거 ${@facts.evidence(k)}|"></p>
   </div>
 </section>
 </body>
