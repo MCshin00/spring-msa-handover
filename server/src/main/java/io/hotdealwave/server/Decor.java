@@ -18,11 +18,11 @@ final class Decor {
     private static final Pattern EVIDENCE = Pattern.compile("\\[([^\\[\\]<>]+?:\\d+(?:, [^\\[\\]<>]+?:\\d+)*)]");
     private static final Pattern KEY = Pattern.compile("^([가-힣A-Za-z()· ]{1,16}): ");
     /** A status standing on its own, not part of a sentence such as "구독자 확인 안 됨:". */
-    private static final Pattern STATUS = Pattern.compile("(?<=^|[\\s>(])(확인됨|확인 안 됨|저장소에 근거 없음)(?=$|[\\s<\\[])");
+    private static final Pattern STATUS = Pattern.compile("(?<=^|[\\s>(])(" + String.join("|", Arrays.stream(FactStatus.values()).map(s -> Pattern.quote(s.text())).toList()) + ")(?=$|[\\s<\\[])");
     /** A status the page does not mark: the value standing alone is confirmed, and the legend says so. */
-    private static final Pattern CONFIRMED = Pattern.compile("(?:\\s·)?\\s?(?<=^|[\\s>(])확인됨(?=$|[\\s<\\[])");
+    private static final Pattern CONFIRMED = Pattern.compile("(?:\\s·)?\\s?(?<=^|[\\s>(])" + Pattern.quote(FactStatus.CONFIRMED.text()) + "(?=$|[\\s<\\[])");
     /** The reason after an unconfirmed status, up to its evidence or the end of the line. */
-    private static final Pattern WHY = Pattern.compile("(확인 안 됨|저장소에 근거 없음) — (.+?)(?=\\s\\[|\\s·\\s|<|$)");
+    private static final Pattern WHY = Pattern.compile("(" + Pattern.quote(FactStatus.UNCONFIRMED.text()) + "|" + Pattern.quote(FactStatus.NO_REPOSITORY_EVIDENCE.text()) + ") — (.+?)(?=\\s\\[|\\s·\\s|<|$)");
     private static final Pattern METHOD = Pattern.compile("(?<=^|<span class=\"k\">HTTP 메서드:</span> |>)(GET|POST|PUT|PATCH|DELETE)(?= |<|$)");
     /** The reason after a response check in a service page row. The endpoint page shows it whole. */
     private static final Pattern REASON = Pattern.compile("(응답 확인: [^(<]*?) \\(([^<]+)\\)(?=</span>)");
@@ -38,14 +38,14 @@ final class Decor {
             return Matcher.quoteReplacement("<div class=\"" + m.group(1) + status(inner) + "\">" + mark(inner, target.source()) + "</div>");
         });
         return TAG.matcher(lines).replaceAll(m -> Matcher.quoteReplacement("<span class=\"tag " + m.group(1) + "\">" + m.group(2)
-                + "</span> <span class=\"tag " + (m.group(3).endsWith("확인함") ? "checked" : "ai") + "\">" + m.group(3) + "</span>"));
+                + "</span> <span class=\"tag " + (m.group(3).endsWith(ConfirmationStatus.CONFIRMED.text()) ? "checked" : "ai") + "\">" + m.group(3) + "</span>"));
     }
 
     /** The weakest status on the line decides its stripe. */
     private static String status(String inner) {
         String text = inner.replaceAll("<[^>]+>", "");
-        if (text.contains("저장소에 근거 없음")) return " none";
-        if (text.contains("확인 안 됨")) return " unknown";
+        if (text.contains(FactStatus.NO_REPOSITORY_EVIDENCE.text())) return " none";
+        if (text.contains(FactStatus.UNCONFIRMED.text())) return " unknown";
         return "";
     }
 
@@ -57,7 +57,7 @@ final class Decor {
         marked = CONFIRMED.matcher(marked).replaceAll("");
         marked = WHY.matcher(marked).replaceAll(m -> Matcher.quoteReplacement(m.group(1)
                 + " <details class=\"why\"><summary>이유</summary>" + m.group(2) + "</details>"));
-        marked = STATUS.matcher(marked).replaceAll(m -> "<span class=\"pill " + (m.group(1).equals("확인 안 됨") ? "unknown" : "none")
+        marked = STATUS.matcher(marked).replaceAll(m -> "<span class=\"pill " + (m.group(1).equals(FactStatus.UNCONFIRMED.text()) ? "unknown" : "none")
                 + "\">" + m.group(1) + "</span>");
         marked = METHOD.matcher(marked).replaceAll(m -> "<span class=\"method " + m.group(1).toLowerCase() + "\">" + m.group(1) + "</span>");
         return evidence(marked, source);

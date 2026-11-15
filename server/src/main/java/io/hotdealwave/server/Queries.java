@@ -23,7 +23,7 @@ class Queries {
 
     List<JsonNode> findEndpoint(String query) {
         String q = query.trim();
-        return analysis.list("endpoints").stream().filter(e -> e.path("id").asText().equals(q)
+        return analysis.list(OutputKey.ENDPOINTS).stream().filter(e -> e.path("id").asText().equals(q)
                 || q.equalsIgnoreCase(value(e.path("httpMethod")) + " " + value(e.path("path")))
                 || q.equals(value(e.path("path"))) || q.equals(e.path("handler").asText())).toList();
     }
@@ -35,11 +35,11 @@ class Queries {
         while (!queue.isEmpty()) {
             String current = queue.poll();
             var next = new ArrayList<Step>();
-            for (var call : analysis.list("calls"))
-                if (call.path("fromId").asText().equals(current)) next.add(step(current, call.path("toId").asText(), "호출", call));
-            var feign = analysis.find("httpCalls", current);
-            if (!feign.isMissingNode()) next.add(step(current, value(feign.path("target")), feign.path("kind").asText() + " 대상", feign.path("target")));
-            var publication = analysis.find("messagePublications", current);
+            for (var call : analysis.list(OutputKey.CALLS))
+                if (call.path("fromId").asText().equals(current)) next.add(step(current, call.path("toId").asText(), StepKind.CALL.text(), call));
+            var feign = analysis.find(OutputKey.HTTP_CALLS, current);
+            if (!feign.isMissingNode()) next.add(step(current, value(feign.path("target")), StepKind.target(feign.path("kind").asText()), feign.path("target")));
+            var publication = analysis.find(OutputKey.MESSAGE_PUBLICATIONS, current);
             if (!publication.isMissingNode()) next.addAll(subscribers(publication));
             for (var step : next) {
                 forward.add(step);
@@ -50,12 +50,12 @@ class Queries {
     }
 
     Topic findSubscribers(String topic) {
-        var publications = analysis.list("messagePublications");
-        var subscriptions = analysis.list("messageSubscriptions");
+        var publications = analysis.list(OutputKey.MESSAGE_PUBLICATIONS);
+        var subscriptions = analysis.list(OutputKey.MESSAGE_SUBSCRIPTIONS);
         var matched = Stream.concat(publications.stream(), subscriptions.stream()).filter(n -> topic.equals(topicName(n)))
                 .map(n -> n.path("id").asText()).collect(java.util.stream.Collectors.toSet());
         var related = new HashSet<>(matched);
-        for (var link : analysis.list("messageLinks"))
+        for (var link : analysis.list(OutputKey.MESSAGE_LINKS))
             if (known(link) && (matched.contains(link.path("publicationId").asText()) || matched.contains(link.path("subscriptionId").asText()))) {
                 related.add(link.path("publicationId").asText());
                 related.add(link.path("subscriptionId").asText());
@@ -73,57 +73,57 @@ class Queries {
 
     /** Rules and traps whose affected IDs include any of the given IDs, traps first. */
     List<JsonNode> knowledgeFor(Collection<String> ids) {
-        return affecting(ids).filter(k -> !"설명".equals(k.path("kind").asText()))
-                .sorted(Comparator.comparing(k -> !"함정".equals(k.path("kind").asText()))).toList();
+        return affecting(ids).filter(k -> !KnowledgeKind.ABOUT.text().equals(k.path("kind").asText()))
+                .sorted(Comparator.comparing(k -> !KnowledgeKind.TRAP.text().equals(k.path("kind").asText()))).toList();
     }
 
     /** Descriptions of the given IDs. */
     List<JsonNode> descriptionsFor(Collection<String> ids) {
-        return affecting(ids).filter(k -> "설명".equals(k.path("kind").asText())).toList();
+        return affecting(ids).filter(k -> KnowledgeKind.ABOUT.text().equals(k.path("kind").asText())).toList();
     }
 
     private Stream<JsonNode> affecting(Collection<String> ids) {
-        return analysis.list("knowledge").stream()
+        return analysis.list(OutputKey.KNOWLEDGE).stream()
                 .filter(k -> Analysis.listOf(k.path("affectedIds")).stream().anyMatch(a -> ids.contains(a.asText())));
     }
 
     /** message-destinations warning reason for an unlinked publication or subscription, if any. */
     String warning(JsonNode kafka) {
-        return analysis.list("warnings").stream()
-                .filter(w -> w.path("check").asText().equals("message-destinations") && w.path("evidence").equals(kafka.path("evidence")))
+        return analysis.list(OutputKey.WARNINGS).stream()
+                .filter(w -> w.path("check").asText().equals(WarningCheck.MESSAGE_DESTINATIONS.key()) && w.path("evidence").equals(kafka.path("evidence")))
                 .map(w -> w.path("reason").asText()).findFirst().orElse(null);
     }
 
     private List<Step> subscribers(JsonNode publication) {
         String id = publication.path("id").asText();
-        var steps = analysis.list("messageLinks").stream().filter(l -> l.path("publicationId").asText().equals(id))
-                .map(l -> step(id, l.path("subscriptionId").asText(), "구독", l)).toList();
+        var steps = analysis.list(OutputKey.MESSAGE_LINKS).stream().filter(l -> l.path("publicationId").asText().equals(id))
+                .map(l -> step(id, l.path("subscriptionId").asText(), StepKind.SUBSCRIPTION.text(), l)).toList();
         if (steps.stream().anyMatch(this::confirmed)) return steps;
         var unlinked = new ArrayList<>(steps);
-        unlinked.add(new Step(id, null, "구독", "확인 안 됨", warning(publication), texts(publication.path("evidence"))));
+        unlinked.add(new Step(id, null, StepKind.SUBSCRIPTION.text(), FactStatus.UNCONFIRMED.text(), warning(publication), texts(publication.path("evidence"))));
         return unlinked;
     }
 
     private List<Step> callers(String id) {
         var steps = new ArrayList<Step>();
-        for (var feign : analysis.list("httpCalls"))
-            if (id.equals(value(feign.path("target")))) steps.add(step(feign.path("id").asText(), id, feign.path("kind").asText() + " 대상", feign.path("target")));
-        for (var link : analysis.list("messageLinks"))
-            if (link.path("subscriptionId").asText().equals(id)) steps.add(step(link.path("publicationId").asText(), id, "구독", link));
+        for (var feign : analysis.list(OutputKey.HTTP_CALLS))
+            if (id.equals(value(feign.path("target")))) steps.add(step(feign.path("id").asText(), id, StepKind.target(feign.path("kind").asText()), feign.path("target")));
+        for (var link : analysis.list(OutputKey.MESSAGE_LINKS))
+            if (link.path("subscriptionId").asText().equals(id)) steps.add(step(link.path("publicationId").asText(), id, StepKind.SUBSCRIPTION.text(), link));
         var targets = steps.stream().map(Step::from).toList();
-        for (var call : analysis.list("calls"))
+        for (var call : analysis.list(OutputKey.CALLS))
             if (targets.contains(call.path("toId").asText()))
-                steps.add(step(call.path("fromId").asText(), call.path("toId").asText(), "호출", call));
+                steps.add(step(call.path("fromId").asText(), call.path("toId").asText(), StepKind.CALL.text(), call));
         return steps;
     }
 
     /** Exceptions the endpoint's handler reaches, in extraction order. */
     List<Thrown> errorsFor(String endpointId) {
-        String service = analysis.find("endpoints", endpointId).path("service").asText();
-        return analysis.list("throws").stream().filter(t -> t.path("fromId").asText().equals(endpointId)).map(t -> new Thrown(t,
-                analysis.list("errorCodes").stream().filter(c -> c.path("service").asText().equals(service)
+        String service = analysis.find(OutputKey.ENDPOINTS, endpointId).path("service").asText();
+        return analysis.list(OutputKey.THROWS).stream().filter(t -> t.path("fromId").asText().equals(endpointId)).map(t -> new Thrown(t,
+                analysis.list(OutputKey.ERROR_CODES).stream().filter(c -> c.path("service").asText().equals(service)
                         && c.path("name").asText().equals(t.path("errorCode").asText())).findFirst().orElse(com.fasterxml.jackson.databind.node.MissingNode.getInstance()),
-                analysis.find("exceptionHandlers", t.path("handlerId").asText()))).toList();
+                analysis.find(OutputKey.EXCEPTION_HANDLERS, t.path("handlerId").asText()))).toList();
     }
 
     private boolean confirmed(Step step) { return Analysis.CONFIRMED.equals(step.status()); }

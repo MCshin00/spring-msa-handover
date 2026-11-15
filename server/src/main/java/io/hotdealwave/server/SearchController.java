@@ -1,6 +1,7 @@
 package io.hotdealwave.server;
 
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,5 +13,5 @@ class SearchController {
     SearchController(Search search) { this.search = search; }
 
     @GetMapping("/api/search")
-    List<Search.Result> search(@RequestParam String q) { return search.search(q); }
+    ResponseEntity<List<Search.Result>> search(@RequestParam String q) { return ResponseEntity.ok(search.search(q)); }
 }

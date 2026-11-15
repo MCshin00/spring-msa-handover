@@ -21,6 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class AskTest {
     static class FakeModel implements AskModel {
+        @Override public String name() { return OpenAiModel.MODEL; }
+
         Reply next;
         RuntimeException failure;
         String lastInput;
@@ -45,7 +47,7 @@ class AskTest {
         /** Word counts on hashed axes, with "캐시" counted as "redis", as a real embedding places words of one meaning close together. */
         static float[] vector(String text) {
             var vector = new float[512];
-            for (var token : Search.tokens(text)) vector[Math.floorMod((token.equals("캐시") ? "redis" : token).hashCode(), vector.length)]++;
+            for (var token : Tokenizer.tokens(text)) vector[Math.floorMod((token.equals("캐시") ? "redis" : token).hashCode(), vector.length)]++;
             return vector;
         }
     }
@@ -69,7 +71,7 @@ class AskTest {
     @Test void citedFileLinesInCitedChunksMakeAnAnswer() {
         model.next = reply("주문 생성은 OrderController.java:40에서 받는다.", false, "C1");
         var answer = ask.ask("createOrder");
-        assertEquals("답", answer.status());
+        assertEquals("답", answer.status().text());
         assertEquals("/endpoints/order-service.OrderController.createOrder", answer.citations().get(0).page());
         assertTrue(model.lastInput.startsWith("조각:\n[C1] order-service.OrderController.createOrder"));
     }
@@ -80,7 +82,7 @@ class AskTest {
 
         model.next = reply("주문 생성은 OrderController.java:41에서 받는다.", false, "C1");
         var answer = ask.ask("createOrder");
-        assertEquals("보류", answer.status());
+        assertEquals("보류", answer.status().text());
         assertEquals("인용 검사: 인용한 조각에 없는 OrderController.java:41", answer.reason());
         assertNull(answer.answer());
 
@@ -121,14 +123,14 @@ class AskTest {
 
         model.embedFailure = new IllegalStateException("OPENAI_API_KEY가 없다");
         var noEmbedding = ask.ask("createOrder");
-        assertEquals("오류", noEmbedding.status());
+        assertEquals("오류", noEmbedding.status().text());
         assertTrue(noEmbedding.reason().startsWith("임베딩 호출 실패: OPENAI_API_KEY"));
         assertEquals(1, model.calls);
         model.embedFailure = null;
 
         model.failure = new IllegalStateException("OPENAI_API_KEY가 없다");
         var failed = ask.ask("createOrder");
-        assertEquals("오류", failed.status());
+        assertEquals("오류", failed.status().text());
         assertTrue(failed.reason().contains("OPENAI_API_KEY"));
     }
 

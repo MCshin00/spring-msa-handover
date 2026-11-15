@@ -32,7 +32,7 @@ class UnsupportedTest {
     }
 
     @LocalServerPort int port;
-    @Autowired Pages pages;
+    @Autowired PageService pages;
 
     @Test void servicePageAndFlowsThroughItSayWhatTheToolDoesNotFollow() {
         String service = pages.text("/services/order-service");

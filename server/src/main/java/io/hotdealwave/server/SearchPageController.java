@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 class SearchPageController {
     private final Search search;
     private final Ask ask;
+    private final AskModel askModel;
 
-    SearchPageController(Search search, Ask ask) { this.search = search; this.ask = ask; }
+    SearchPageController(Search search, Ask ask, AskModel askModel) { this.search = search; this.ask = ask; this.askModel = askModel; }
 
     @GetMapping("/search")
     String search(@RequestParam(required = false) String q, Model model) {
@@ -25,7 +26,7 @@ class SearchPageController {
     String ask(@RequestParam String question, Model model) {
         model.addAttribute("question", question);
         model.addAttribute("answer", ask.ask(question));
-        model.addAttribute("model", OpenAiModel.MODEL);
+        model.addAttribute("model", askModel.name());
         return "search";
     }
 }

@@ -14,12 +14,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class SearchTest {
     @Autowired Search search;
+    @Autowired SearchRouter router;
     @Autowired MockMvc mvc;
 
     @Test void tokensKeepIdentifiersSplitCaseAndPairKorean() {
-        assertEquals(List.of("createorder", "create", "order"), Search.tokens("createOrder"));
-        assertEquals(List.of("reduce_quantity", "reduce", "quantity"), Search.tokens("reduce_quantity"));
-        assertEquals(List.of("재고", "고부", "부족"), Search.tokens("재고부족"));
+        assertEquals(List.of("createorder", "create", "order"), Tokenizer.tokens("createOrder"));
+        assertEquals(List.of("reduce_quantity", "reduce", "quantity"), Tokenizer.tokens("reduce_quantity"));
+        assertEquals(List.of("재고", "고부", "부족"), Tokenizer.tokens("재고부족"));
     }
 
     @Test void searchFindsIdentifiersCasePartsAndKorean() {
@@ -36,9 +37,10 @@ class SearchTest {
     }
 
     @Test void filtersByDataServiceNamesAndKindWordsThenRelaxes() {
-        assertEquals(new Search.Route("payment-service", null), search.route("payment-service 취소"));
-        assertEquals(new Search.Route("order-service", "토픽"), search.route("order 토픽"));
-        assertEquals(new Search.Route(null, null), search.route("주문 createOrder"));
+        assertEquals(new SearchRouter.Route("payment-service", null), router.route("payment-service 취소"));
+        assertEquals("order-service", router.route("order 토픽").service());
+        assertEquals("토픽", router.route("order 토픽").kind().text());
+        assertEquals(new SearchRouter.Route(null, null), router.route("주문 createOrder"));
         assertTrue(search.search("payment-service 취소").stream().allMatch(r -> r.services().contains("payment-service")));
         // eureka-server has no topic, so the kind filter is dropped and the service page remains.
         assertEquals("/services/eureka-server", search.search("eureka-server 토픽").get(0).page());

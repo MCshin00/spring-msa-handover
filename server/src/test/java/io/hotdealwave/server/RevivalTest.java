@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 class RevivalTest {
     @LocalServerPort int port;
     @Autowired MockMvc mvc;
-    @Autowired Pages pages;
+    @Autowired PageService pages;
     @Autowired Search search;
 
     private String html(String path) throws Exception {

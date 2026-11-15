@@ -9,29 +9,29 @@
 </header>
 <h2>배포 파이프라인</h2>
 <div th:each="w : ${repository.path('pipelines')}">
-  <p class="line" th:text="|${w.path('tool').asText()} · 파일: ${w.path('file').asText()} · 이름: ${@view.fact(w.path('name'))}|"></p>
-  <p class="line" th:each="t : ${w.path('triggers')}" th:text="|트리거: ${t.path('event').asText()} 브랜치 ${@view.plains(t.path('branches'))} ${@view.status(t)} ${@view.evidence(t)}|"></p>
-  <p class="line" th:each="v : ${w.path('env')}" th:text="|변수 ${v.path('name').asText()}: ${@view.fact(v.path('value'))}|"></p>
-  <p class="line" th:each="s : ${w.path('secrets')}" th:text="|비밀값 ${s.path('name').asText()}(${s.path('reference').asText()}) 값: ${@view.fact(s.path('secretValue'))}|"></p>
+  <p class="line" th:text="|${w.path('tool').asText()} · 파일: ${w.path('file').asText()} · 이름: ${@facts.fact(w.path('name'))}|"></p>
+  <p class="line" th:each="t : ${w.path('triggers')}" th:text="|트리거: ${t.path('event').asText()} 브랜치 ${@facts.plains(t.path('branches'))} ${@facts.status(t)} ${@facts.evidence(t)}|"></p>
+  <p class="line" th:each="v : ${w.path('env')}" th:text="|변수 ${v.path('name').asText()}: ${@facts.fact(v.path('value'))}|"></p>
+  <p class="line" th:each="s : ${w.path('secrets')}" th:text="|비밀값 ${s.path('name').asText()}(${s.path('reference').asText()}) 값: ${@facts.fact(s.path('secretValue'))}|"></p>
   <div th:each="j : ${w.path('jobs')}">
-    <p class="line" th:text="|작업 ${j.path('id').asText()}${j.path('needs').isEmpty() ? '' : ' (먼저: ' + @view.joined(j.path('needs')) + ')'} ${@view.status(j)} ${@view.evidence(j)}|"></p>
+    <p class="line" th:text="|작업 ${j.path('id').asText()}${j.path('needs').isEmpty() ? '' : ' (먼저: ' + @facts.joined(j.path('needs')) + ')'} ${@facts.status(j)} ${@facts.evidence(j)}|"></p>
     <div th:each="s : ${j.path('steps')}">
-      <p class="line" th:text="|    단계 ${s.path('name').asText()}${s.has('uses') ? ' · 액션 ' + @view.plain(s.path('uses')) : ''} ${@view.status(s)} ${@view.evidence(s)}|"></p>
-      <p class="line" th:each="v : ${s.path('env')}" th:text="|        변수 ${v.path('name').asText()}: ${@view.fact(v.path('value'))}|"></p>
-      <p class="line" th:each="c : ${s.path('commands')}" th:text="|        ${@view.plain(c)} ${@view.status(c)} ${@view.evidence(c)}|"></p>
+      <p class="line" th:text="|    단계 ${s.path('name').asText()}${s.has('uses') ? ' · 액션 ' + @facts.plain(s.path('uses')) : ''} ${@facts.status(s)} ${@facts.evidence(s)}|"></p>
+      <p class="line" th:each="v : ${s.path('env')}" th:text="|        변수 ${v.path('name').asText()}: ${@facts.fact(v.path('value'))}|"></p>
+      <p class="line" th:each="c : ${s.path('commands')}" th:text="|        ${@facts.plain(c)} ${@facts.status(c)} ${@facts.evidence(c)}|"></p>
     </div>
   </div>
 </div>
 <h2>컨테이너</h2>
-<p class="line" th:each="i : ${repository.path('containers')}" th:text="|${i.path('tool').asText()} · ${i.path('service').asText()}: 이미지 ${@view.plain(i.path('image'))} · FROM ${@view.plains(i.path('baseImages'))} · 빌드 ${@view.plain(i.path('buildCommand'))} · EXPOSE ${@view.plain(i.path('exposedPort'))} ${@view.status(i)} ${@view.evidence(i)}|"></p>
+<p class="line" th:each="i : ${repository.path('containers')}" th:text="|${i.path('tool').asText()} · ${i.path('service').asText()}: 이미지 ${@facts.plain(i.path('image'))} · FROM ${@facts.plains(i.path('baseImages'))} · 빌드 ${@facts.plain(i.path('buildCommand'))} · EXPOSE ${@facts.plain(i.path('exposedPort'))} ${@facts.status(i)} ${@facts.evidence(i)}|"></p>
 <h2>메트릭 수집</h2>
-<p class="line" th:each="t : ${repository.path('metrics')}" th:text="|${t.path('tool').asText()} · ${t.path('job').asText()}: ${@view.plain(t.path('address'))} ${@view.plain(t.path('metricsPath'))} 주기 ${@view.plain(t.path('interval'))} ${@view.status(t)} ${@view.evidence(t)}|"></p>
+<p class="line" th:each="t : ${repository.path('metrics')}" th:text="|${t.path('tool').asText()} · ${t.path('job').asText()}: ${@facts.plain(t.path('address'))} ${@facts.plain(t.path('metricsPath'))} 주기 ${@facts.plain(t.path('interval'))} ${@facts.status(t)} ${@facts.evidence(t)}|"></p>
 <h2>로그 전송</h2>
-<p class="line" th:each="l : ${repository.path('logShipping')}" th:text="|${l.path('tool').asText()} · ${l.path('service').asText()}: ${@view.plain(l.path('appender'))} → ${@view.plain(l.path('url'))} · 라벨 ${@view.plain(l.path('labels'))} · ${l.path('hostReference').asText()} 값: ${@view.fact(l.path('hostValue'))} · ${@view.status(l)} ${@view.evidence(l)}|"></p>
+<p class="line" th:each="l : ${repository.path('logShipping')}" th:text="|${l.path('tool').asText()} · ${l.path('service').asText()}: ${@facts.plain(l.path('appender'))} → ${@facts.plain(l.path('url'))} · 라벨 ${@facts.plain(l.path('labels'))} · ${l.path('hostReference').asText()} 값: ${@facts.fact(l.path('hostValue'))} · ${@facts.status(l)} ${@facts.evidence(l)}|"></p>
 <h2>모니터링 도구 설정</h2>
-<p class="line" th:each="c : ${repository.path('toolConfigs')}" th:text="|${c.path('tool').asText()} · ${c.path('file').asText()}: 포트 ${@view.plain(c.path('port'))} · 저장 ${@view.plain(c.path('storage'))} ${@view.status(c)} ${@view.evidence(c)}|"></p>
+<p class="line" th:each="c : ${repository.path('toolConfigs')}" th:text="|${c.path('tool').asText()} · ${c.path('file').asText()}: 포트 ${@facts.plain(c.path('port'))} · 저장 ${@facts.plain(c.path('storage'))} ${@facts.status(c)} ${@facts.evidence(c)}|"></p>
 <h2>모니터링 도구 실행 정의</h2>
-<p class="line" th:each="t : ${repository.path('monitoringTools')}" th:text="|${t.path('name').asText()} 실행 정의: ${@view.fact(t.path('runDefinition'))} · 언급 ${@view.evidence(t)}|"></p>
+<p class="line" th:each="t : ${repository.path('monitoringTools')}" th:text="|${t.path('name').asText()} 실행 정의: ${@facts.fact(t.path('runDefinition'))} · 언급 ${@facts.evidence(t)}|"></p>
 <script src="/app.js"></script>
 </body>
 </html>

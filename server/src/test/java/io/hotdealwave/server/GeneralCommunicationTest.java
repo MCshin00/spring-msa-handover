@@ -19,10 +19,10 @@ class GeneralCommunicationTest {
     @TempDir Path temporary;
     @Autowired SpringTemplateEngine engine;
     @Autowired ApplicationContext context;
-    @Autowired View view;
+    @Autowired FactFormatter view;
     Analysis analysis;
     Queries queries;
-    Pages pages;
+    PageService pages;
     private final ObjectMapper json = new ObjectMapper();
     private ObjectNode fact(String value) {
         var node = json.createObjectNode().put("value", value).put("status", "확인됨");
@@ -48,7 +48,8 @@ class GeneralCommunicationTest {
         json.writeValue(file.toFile(), root);
         analysis = new Analysis(file.toString());
         queries = new Queries(analysis);
-        pages = new Pages(analysis, queries, engine, context, new Legend(analysis), new View());
+        pages = new PageService(analysis, queries, view, new WarningService(analysis, view),
+                new PageRenderer(analysis, engine, context, new Legend(analysis)));
     }
     @Test void queriesUseKindsAndFollowLinksBetweenDifferentDestinationNames() {
         assertEquals("restClient 대상", queries.traceFlow("shop.Controller.get").forward().get(1).kind());
@@ -56,7 +57,8 @@ class GeneralCommunicationTest {
         assertEquals(1, queries.findSubscribers("orders").publications().size());
     }
     @Test void messagePageAcceptsExchangeAndRoutingKeyInItsPath() throws Exception {
-        var mvc = MockMvcBuilders.standaloneSetup(new PageController(analysis, pages, queries, view)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new PageController(pages, new HomeService(analysis, pages, queries, new WarningService(analysis, view),
+                new PageRenderer(analysis, engine, context, new Legend(analysis))))).build();
         var response = mvc.perform(get("/topics/events/created")).andReturn().getResponse();
         response.setCharacterEncoding("UTF-8");
         assertEquals(200, response.getStatus());

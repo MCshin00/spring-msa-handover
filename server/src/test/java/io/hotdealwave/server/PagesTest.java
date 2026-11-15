@@ -20,7 +20,7 @@ class PagesTest {
         return response.getContentAsString();
     }
 
-    @Autowired Pages pages;
+    @Autowired PageService pages;
     @Autowired Search search;
 
     @Test void homeSummarizesServicesAndListsUnconfirmedConnections() throws Exception {
