@@ -1,12 +1,12 @@
 # 문서 페이지와 되살리기 페이지
 
-서버가 검증 출력(`out/analysis.json`)으로 만드는 페이지를 설명한다. 사람이 브라우저로 읽는 창구이고, 같은 본문을 검색·질의응답·MCP가 읽는다. 코드는 `server/src/main/java/io/hotdealwave/server/`의 `Pages.java`(본문), `View.java`(값·상태·근거 표기), `Decor.java`(꾸미기), `Legend.java`(확인됨의 뜻)와 `server/src/main/resources/templates/`에 있다.
+서버가 검증 출력(`out/analysis.json`)으로 만드는 페이지를 설명한다. 사람이 브라우저로 읽는 창구이고, 같은 본문을 검색·질의응답·MCP가 읽는다. 코드는 `server/src/main/java/io/hotdealwave/server/`의 `page/service/PageService.java`(본문), `page/format/FactFormatter.java`(값·상태·근거 표기), `page/render/HtmlDecorator.java`(꾸미기), `page/render/ConfirmedLegend.java`(확인됨의 뜻)와 `server/src/main/resources/templates/`에 있다.
 
 ```
 out/analysis.json
-  --> Pages + 템플릿: 본문 텍스트 (값, 상태, 이유, 근거 파일:줄)
+  --> PageService + PageRenderer + 템플릿: 본문 텍스트 (값, 상태, 이유, 근거 파일:줄)
         +--> 검색 색인, 질의응답 모델 입력, MCP 결과      글자 그대로
-        +--> Decor: 브라우저로 보낼 때만 덧씌움            근거 접기·링크, 상태 색, 흐름 상자
+        +--> HtmlDecorator: 브라우저로 보낼 때만 덧씌움            근거 접기·링크, 상태 색, 흐름 상자
 ```
 
 ## 1. 페이지 종류

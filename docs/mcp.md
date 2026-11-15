@@ -1,6 +1,6 @@
 # MCP
 
-서버의 `/mcp`는 문서를 Claude Code·Codex 같은 코딩 에이전트가 도구로 읽게 한다. 저장소를 받지 못했거나 읽지 않는 사람(서비스 API를 쓰는 프론트엔드 개발자, 에이전트)이 자기 에이전트에게 묻는 경로다. 코드는 `server/src/main/java/io/hotdealwave/server/Mcp.java`에 있다.
+서버의 `/mcp`는 문서를 Claude Code·Codex 같은 코딩 에이전트가 도구로 읽게 한다. 저장소를 받지 못했거나 읽지 않는 사람(서비스 API를 쓰는 프론트엔드 개발자, 에이전트)이 자기 에이전트에게 묻는 경로다. 코드는 `server/src/main/java/io/hotdealwave/server/mcp/config/McpConfig.java`(설정)과 `server/src/main/java/io/hotdealwave/server/mcp/service/McpToolService.java`(도구 본문)에 있다.
 
 ## 1. 질의응답과 무엇이 다른가
 

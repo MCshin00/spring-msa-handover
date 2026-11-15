@@ -6,47 +6,47 @@
 <header class="summary">
 <h1 th:text="${name}"></h1>
 <p class="line" th:text="|검증 범위: ${@endpointsFormatter.verificationSummary(endpoints)}|"></p>
-<p class="line" th:text="|디렉터리: ${service.path('directory').asText()} · compose 서비스: ${@facts.fact(service.path('composeService'))}|"></p>
+<p class="line" th:text="|디렉터리: ${service.path('directory').asText()} · compose 서비스: ${@facts.valueWithEvidence(service.path('composeService'))}|"></p>
 </header>
 <h2 th:text="|엔드포인트 ${#lists.size(endpoints)}개|"></h2>
-<p class="line" th:each="e : ${endpoints}" th:classappend="|op op-${#strings.toLowerCase(@facts.plain(e.path('httpMethod')))}|">
-  <a th:href="|/endpoints/${e.path('id').asText()}|" th:text="|${@facts.plain(e.path('httpMethod'))} ${@facts.plain(e.path('path'))}|"></a>
-  <span th:text="|${e.path('handler').asText()} · ${@facts.status(e)} · 응답 확인: ${@endpointsFormatter.responseCheck(e.path('responseCheck'))}|"></span>
+<p class="line" th:each="endpoint : ${endpoints}" th:classappend="|op op-${#strings.toLowerCase(@facts.valueOrStatus(endpoint.path('httpMethod')))}|">
+  <a th:href="|/endpoints/${endpoint.path('id').asText()}|" th:text="|${@facts.valueOrStatus(endpoint.path('httpMethod'))} ${@facts.valueOrStatus(endpoint.path('path'))}|"></a>
+  <span th:text="|${endpoint.path('handler').asText()} · ${@facts.statusWithReason(endpoint)} · 응답 확인: ${@endpointsFormatter.responseCheck(endpoint.path('responseCheck'))}|"></span>
 </p>
 <h2>HTTP 호출</h2>
-<p class="line" th:each="f : ${httpCalls}" th:text="|${f.path('id').asText()} → ${@facts.fact(f.path('target'))}|"></p>
+<p class="line" th:each="httpCall : ${httpCalls}" th:text="|${httpCall.path('id').asText()} → ${@facts.valueWithEvidence(httpCall.path('target'))}|"></p>
 <h2>메시지 발행</h2>
-<p class="line" th:each="p : ${messagePublications}" th:with="t=${@flows.topic(p)}">
-  <span th:text="|${p.path('id').asText()} (${p.path('kind').asText()}) ${@facts.status(p)} ${@facts.evidence(p)} 토픽 |"></span>
-  <a th:if="${t != null}" th:href="|/topics/${t}|" th:text="${t}"></a>
+<p class="line" th:each="publication : ${messagePublications}" th:with="topicName=${@flows.topicName(publication)}">
+  <span th:text="|${publication.path('id').asText()} (${publication.path('kind').asText()}) ${@facts.statusWithReason(publication)} ${@facts.evidence(publication)} 토픽 |"></span>
+  <a th:if="${topicName != null}" th:href="|/topics/${topicName}|" th:text="${topicName}"></a>
 </p>
 <h2>메시지 구독</h2>
-<p class="line" th:each="s : ${messageSubscriptions}" th:with="t=${@flows.topic(s)}">
-  <span th:text="|${s.path('id').asText()} (${s.path('kind').asText()}) ${@facts.status(s)} ${@facts.evidence(s)} 토픽 |"></span>
-  <a th:if="${t != null}" th:href="|/topics/${t}|" th:text="${t}"></a>
+<p class="line" th:each="subscription : ${messageSubscriptions}" th:with="topicName=${@flows.topicName(subscription)}">
+  <span th:text="|${subscription.path('id').asText()} (${subscription.path('kind').asText()}) ${@facts.statusWithReason(subscription)} ${@facts.evidence(subscription)} 토픽 |"></span>
+  <a th:if="${topicName != null}" th:href="|/topics/${topicName}|" th:text="${topicName}"></a>
 </p>
 <h2>환경변수</h2>
-<p class="line" th:each="v : ${environmentVariables}" th:text="|${v.path('name').asText()} (${v.path('profile').asText()}, ${v.path('location').asText()}) 값: ${@facts.fact(v.path('value'))}|"></p>
+<p class="line" th:each="variable : ${environmentVariables}" th:text="|${variable.path('name').asText()} (${variable.path('profile').asText()}, ${variable.path('location').asText()}) 값: ${@facts.valueWithEvidence(variable.path('value'))}|"></p>
 <h2>외부 자원</h2>
-<p class="line" th:each="r : ${externalResources}" th:text="|${r.path('kind').asText()} 설정 근거 ${@facts.texts(r.path('configurationEvidence'))} 코드 근거 ${@facts.texts(r.path('codeEvidence'))}|"></p>
+<p class="line" th:each="resource : ${externalResources}" th:text="|${resource.path('kind').asText()} 설정 근거 ${@facts.bracketedTexts(resource.path('configurationEvidence'))} 코드 근거 ${@facts.bracketedTexts(resource.path('codeEvidence'))}|"></p>
 <h2>페이지 직렬화</h2>
 <p th:if="${pageSerialization.isEmpty()}">추출 항목 없음</p>
-<p class="line" th:each="s : ${pageSerialization}" th:text="|@EnableSpringDataWebSupport pageSerializationMode: ${@facts.fact(s.path('mode'))}|"></p>
+<p class="line" th:each="serialization : ${pageSerialization}" th:text="|@EnableSpringDataWebSupport pageSerializationMode: ${@facts.valueWithEvidence(serialization.path('mode'))}|"></p>
 <h2 th:text="|오류 코드 ${#lists.size(errorCodes)}개|"></h2>
-<p class="line" th:each="c : ${errorCodes}" th:text="${@errorsFormatter.errorCode(c)}"></p>
+<p class="line" th:each="errorCode : ${errorCodes}" th:text="${@errorsFormatter.errorCode(errorCode)}"></p>
 <h2>예외 처리기</h2>
-<div th:each="h : ${exceptionHandlers}">
-  <p class="line" th:text="${@errorsFormatter.handler(h)}"></p>
-  <p class="line" th:each="l : ${@endpointsFormatter.fields(h.path('body'))}" th:text="|    ${l}|"></p>
+<div th:each="handler : ${exceptionHandlers}">
+  <p class="line" th:text="${@errorsFormatter.handler(handler)}"></p>
+  <p class="line" th:each="line : ${@endpointsFormatter.fieldLines(handler.path('body'))}" th:text="|    ${line}|"></p>
 </div>
 <th:block th:unless="${gatewayRejections.isEmpty()}">
 <h2>Gateway 거부 응답</h2>
-<p class="line" th:each="r : ${gatewayRejections}" th:text="${@errorsFormatter.rejection(r)}"></p>
+<p class="line" th:each="rejection : ${gatewayRejections}" th:text="${@errorsFormatter.rejection(rejection)}"></p>
 </th:block>
 <th:block th:unless="${unsupported.isEmpty()}">
 <h2 th:text="|도구가 다루지 않는 방식 ${#lists.size(unsupported)}곳|"></h2>
 <p class="note">형식에 담을 자리가 없어 따라가지 않은 곳이다. 이 서비스의 흐름에는 이 호출이 빠져 있다.</p>
-<p class="line" th:each="u : ${unsupported}" th:text="|${u.path('mechanism').asText()}: ${u.path('description').asText()} ${@facts.evidence(u)}|"></p>
+<p class="line" th:each="unsupportedItem : ${unsupported}" th:text="|${unsupportedItem.path('mechanism').asText()}: ${unsupportedItem.path('description').asText()} ${@facts.evidence(unsupportedItem)}|"></p>
 </th:block>
 <section th:replace="~{items :: items(${items})}"></section>
 <script src="/app.js"></script>

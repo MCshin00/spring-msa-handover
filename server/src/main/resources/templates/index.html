@@ -17,10 +17,10 @@
 </header>
 <h2>서비스</h2>
 <div class="cards">
-  <a class="card" th:each="c : ${cards}" th:href="|/services/${c.name()}|">
-    <b th:text="${c.name()}"></b>
-    <span th:text="|엔드포인트 ${c.endpoints()} · HTTP ${c.httpCalls()} · 발행 ${c.publications()} · 구독 ${c.subscriptions()}|"></span>
-    <span class="sub" th:text="${c.endpoints() == 0} ? '엔드포인트 없음' : |실제 응답 ${c.responded()}/${c.endpoints()}|"></span>
+  <a class="card" th:each="card : ${cards}" th:href="|/services/${card.name()}|">
+    <b th:text="${card.name()}"></b>
+    <span th:text="|엔드포인트 ${card.endpoints()} · HTTP ${card.httpCalls()} · 발행 ${card.publications()} · 구독 ${card.subscriptions()}|"></span>
+    <span class="sub" th:text="${card.endpoints() == 0} ? '엔드포인트 없음' : |실제 응답 ${card.responded()}/${card.endpoints()}|"></span>
   </a>
 </div>
 <h2>메시지 목적지</h2>
@@ -28,10 +28,10 @@
 <table class="list">
   <thead><tr><th>토픽 (환경변수 또는 코드의 토픽 이름)</th><th class="num">발행</th><th class="num">구독</th></tr></thead>
   <tbody>
-    <tr th:each="t : ${topics}" th:classappend="${t.publications() == 0 or t.subscriptions() == 0} ? 'one-sided'">
-      <td><a th:href="|/topics/${t.name()}|" th:text="${t.name()}"></a></td>
-      <td class="num" th:text="${t.publications()}"></td>
-      <td class="num" th:text="${t.subscriptions()}"></td>
+    <tr th:each="topicCard : ${topics}" th:classappend="${topicCard.publications() == 0 or topicCard.subscriptions() == 0} ? 'one-sided'">
+      <td><a th:href="|/topics/${topicCard.name()}|" th:text="${topicCard.name()}"></a></td>
+      <td class="num" th:text="${topicCard.publications()}"></td>
+      <td class="num" th:text="${topicCard.subscriptions()}"></td>
     </tr>
   </tbody>
 </table>
@@ -45,11 +45,11 @@
 <table class="list gaps">
   <thead><tr><th>종류</th><th>대상</th><th>사유</th><th>근거</th></tr></thead>
   <tbody>
-    <tr th:each="g : ${group.warnings()}">
-      <td><span class="tag about" th:text="${g.kind()}"></span></td>
-      <td><a th:if="${g.page() != null}" th:href="${g.page()}" th:text="${g.target()}"></a></td>
-      <td><b class="gap-title" th:text="${g.title()}"></b><br><span th:text="${g.detail()}"></span></td>
-      <td><p class="meta" th:text="${g.evidence()}"></p></td>
+    <tr th:each="warning : ${group.warnings()}">
+      <td><span class="tag about" th:text="${warning.kind()}"></span></td>
+      <td><a th:if="${warning.page() != null}" th:href="${warning.page()}" th:text="${warning.target()}"></a></td>
+      <td><b class="gap-title" th:text="${warning.title()}"></b><br><span th:text="${warning.detail()}"></span></td>
+      <td><p class="meta" th:text="${warning.evidence()}"></p></td>
     </tr>
   </tbody>
 </table>
