@@ -9,35 +9,35 @@
 </header>
 <h2>외부 자원</h2>
 <p class="line" th:if="${resources.isEmpty() and externalCalls.isEmpty()}">없음</p>
-<p class="line" th:each="r : ${resources}" th:text="|${r.path('service').asText()} · ${r.path('kind').asText()} ${@facts.status(r)} · 설정 ${@facts.count(r.path('configurationEvidence'))}줄 · 코드 ${@facts.count(r.path('codeEvidence'))}줄 ${@facts.texts(r.path('configurationEvidence'), r.path('codeEvidence'))}|"></p>
-<p class="line" th:each="c : ${externalCalls}" th:text="|${c.service()} · 외부 API ${c.id()} (${c.kind()}) · 주소 ${c.address()} · 경로 ${c.path()}|"></p>
+<p class="line" th:each="resource : ${resources}" th:text="|${resource.path('service').asText()} · ${resource.path('kind').asText()} ${@facts.statusWithReason(resource)} · 설정 ${@facts.count(resource.path('configurationEvidence'))}줄 · 코드 ${@facts.count(resource.path('codeEvidence'))}줄 ${@facts.bracketedTexts(resource.path('configurationEvidence'), resource.path('codeEvidence'))}|"></p>
+<p class="line" th:each="call : ${externalCalls}" th:text="|${call.service()} · 외부 API ${call.id()} (${call.kind()}) · 주소 ${call.address()} · 경로 ${call.path()}|"></p>
 <h2>채워야 할 환경변수</h2>
 <p class="line" th:if="${variables.isEmpty()}">없음</p>
 <p class="note" th:unless="${variables.isEmpty()}" th:text="|값이 저장소에서 확인되지 않은 환경변수 ${#lists.size(variables)}개다. 이름마다 읽는 서비스·프로필·설정 위치를 묶었다.|"></p>
-<p class="line" th:each="v : ${variables}" th:text="|${v.name()}: ${v.status()} · 서비스 ${v.services()} · 프로필 ${v.profiles()} · 위치 ${v.locations()} ${v.evidence()}|"></p>
+<p class="line" th:each="variable : ${variables}" th:text="|${variable.name()}: ${variable.status()} · 서비스 ${variable.services()} · 프로필 ${variable.profiles()} · 위치 ${variable.locations()} ${variable.evidence()}|"></p>
 <h2>저장소 밖 비밀값</h2>
 <p class="line" th:if="${secrets.isEmpty()}">없음</p>
-<p class="line" th:each="s : ${secrets}" th:text="|${s.path('name').asText()}(${s.path('reference').asText()}) 값: ${@facts.fact(s.path('secretValue'))}|"></p>
+<p class="line" th:each="secret : ${secrets}" th:text="|${secret.path('name').asText()}(${secret.path('reference').asText()}) 값: ${@facts.valueWithEvidence(secret.path('secretValue'))}|"></p>
 <h2>컨테이너</h2>
 <p class="line" th:if="${containers.isEmpty()}">없음</p>
-<p class="line" th:each="i : ${containers}" th:text="|${i.path('service').asText()}: 이미지 ${@facts.plain(i.path('image'))} · FROM ${@facts.plains(i.path('baseImages'))} · EXPOSE ${@facts.plain(i.path('exposedPort'))} · ${i.path('tool').asText()} ${@facts.status(i)} ${@facts.evidence(i)}|"></p>
+<p class="line" th:each="container : ${containers}" th:text="|${container.path('service').asText()}: 이미지 ${@facts.valueOrStatus(container.path('image'))} · FROM ${@facts.valuesOrStatuses(container.path('baseImages'))} · EXPOSE ${@facts.valueOrStatus(container.path('exposedPort'))} · ${container.path('tool').asText()} ${@facts.statusWithReason(container)} ${@facts.evidence(container)}|"></p>
 <h2>띄울 때 확인할 연결</h2>
 <p class="line" th:if="${warnings.isEmpty()}">없음</p>
 <th:block th:each="group : ${warnings}">
 <h3 th:text="|${group.title()} ${#lists.size(group.warnings())}개|"></h3>
 <p class="note" th:text="|할 일: ${group.action()}|"></p>
-<p class="line" th:each="l : ${group.warnings()}" th:text="|${l.reason()} ${l.evidence()}|"></p>
+<p class="line" th:each="warning : ${group.warnings()}" th:text="|${warning.reason()} ${warning.evidence()}|"></p>
 </th:block>
 <h2>운영 함정</h2>
 <p class="line" th:if="${traps.isEmpty()}">없음</p>
-<div class="item" th:each="k : ${traps}">
-  <h3><span class="tag" th:classappend="${@knowledge.kindClass(k)}" th:text="${@knowledge.itemTag(k)}"></span> <span th:text="${k.path('title').asText()}"></span></h3>
-  <p th:text="${k.path('description').asText()}"></p>
-  <p class="meta" th:text="|서비스 ${k.path('service').asText()} · 근거 ${@facts.evidence(k)}|"></p>
+<div class="item" th:each="item : ${traps}">
+  <h3><span class="tag" th:classappend="${@knowledge.kindClass(item)}" th:text="${@knowledge.itemTag(item)}"></span> <span th:text="${item.path('title').asText()}"></span></h3>
+  <p th:text="${item.path('description').asText()}"></p>
+  <p class="meta" th:text="|서비스 ${item.path('service').asText()} · 근거 ${@facts.evidence(item)}|"></p>
 </div>
 <h2>도구가 다루지 않은 위치</h2>
 <p class="line" th:if="${unsupported.isEmpty()}">없음</p>
-<p class="line" th:each="u : ${unsupported}" th:text="|${u.path('service').asText()} · ${u.path('mechanism').asText()}: ${u.path('description').asText()} ${@facts.evidence(u)}|"></p>
+<p class="line" th:each="unsupportedItem : ${unsupported}" th:text="|${unsupportedItem.path('service').asText()} · ${unsupportedItem.path('mechanism').asText()}: ${unsupportedItem.path('description').asText()} ${@facts.evidence(unsupportedItem)}|"></p>
 <script src="/app.js"></script>
 </body>
 </html>

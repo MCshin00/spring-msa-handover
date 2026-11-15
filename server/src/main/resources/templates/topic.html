@@ -10,25 +10,25 @@
 <section th:replace="~{items :: descriptions(${descriptions})}"></section>
 <h2>발행</h2>
 <p th:if="${topic.publications().isEmpty()}">확인된 발행 없음</p>
-<div th:each="p : ${topic.publications()}">
-  <h3><a th:href="|/services/${p.path('service').asText()}|" th:text="${p.path('id').asText()}"></a></h3>
-  <p class="line" th:text="|종류: ${p.path('kind').asText()} · 확인 상태: ${@facts.status(p)} ${@facts.evidence(p)}|"></p>
-  <p class="line" th:text="|설정 키: ${@facts.fact(p.path('topicKey'))}|"></p>
-  <p class="line" th:text="|환경변수: ${@facts.fact(p.path('environment'))}|"></p>
-  <p class="line" th:text="|토픽 실제 값: ${@facts.fact(p.path('topicName'))}|"></p>
+<div th:each="publication : ${topic.publications()}">
+  <h3><a th:href="|/services/${publication.path('service').asText()}|" th:text="${publication.path('id').asText()}"></a></h3>
+  <p class="line" th:text="|종류: ${publication.path('kind').asText()} · 확인 상태: ${@facts.statusWithReason(publication)} ${@facts.evidence(publication)}|"></p>
+  <p class="line" th:text="|설정 키: ${@facts.valueWithEvidence(publication.path('topicKey'))}|"></p>
+  <p class="line" th:text="|환경변수: ${@facts.valueWithEvidence(publication.path('environment'))}|"></p>
+  <p class="line" th:text="|토픽 실제 값: ${@facts.valueWithEvidence(publication.path('topicName'))}|"></p>
 </div>
 <h2>구독</h2>
 <p th:if="${topic.subscriptions().isEmpty()}">확인된 구독 없음</p>
-<div th:each="s : ${topic.subscriptions()}">
-  <h3><a th:href="|/services/${s.path('service').asText()}|" th:text="${s.path('id').asText()}"></a></h3>
-  <p class="line" th:text="|확인 상태: ${@facts.status(s)} ${@facts.evidence(s)}|"></p>
-  <p class="line" th:text="|설정 키: ${@facts.fact(s.path('topicKey'))}|"></p>
-  <p class="line" th:text="|환경변수: ${@facts.fact(s.path('environment'))}|"></p>
-  <p class="line" th:text="|토픽 실제 값: ${@facts.fact(s.path('topicName'))}|"></p>
+<div th:each="subscription : ${topic.subscriptions()}">
+  <h3><a th:href="|/services/${subscription.path('service').asText()}|" th:text="${subscription.path('id').asText()}"></a></h3>
+  <p class="line" th:text="|확인 상태: ${@facts.statusWithReason(subscription)} ${@facts.evidence(subscription)}|"></p>
+  <p class="line" th:text="|설정 키: ${@facts.valueWithEvidence(subscription.path('topicKey'))}|"></p>
+  <p class="line" th:text="|환경변수: ${@facts.valueWithEvidence(subscription.path('environment'))}|"></p>
+  <p class="line" th:text="|토픽 실제 값: ${@facts.valueWithEvidence(subscription.path('topicName'))}|"></p>
 </div>
 <h2>발행 → 구독 연결</h2>
-<p class="line" th:each="s : ${links}" th:text="${@flows.step(s)}"></p>
-<p class="line" th:each="w : ${unpublished}" th:text="|확인 안 됨 — ${w}|"></p>
+<p class="line" th:each="step : ${links}" th:text="${@flows.stepSummary(step)}"></p>
+<p class="line" th:each="warning : ${unpublished}" th:text="|확인 안 됨 — ${warning}|"></p>
 <section th:replace="~{items :: items(${items})}"></section>
 <script src="/app.js"></script>
 </body>

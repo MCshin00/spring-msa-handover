@@ -5,36 +5,36 @@
 <nav class="top"><span><a href="/">처음</a> · <a th:href="|/services/${endpoint.path('service').asText()}|" th:text="${endpoint.path('service').asText()}"></a></span><span class="target">[[${target.name()}]] · 고정 커밋 [[${target.shortCommit()}]]</span></nav>
 <header class="summary">
 <h1 th:text="${endpoint.path('id').asText()}"></h1>
-<p class="line" th:text="|검증 범위: ${@endpointsFormatter.verification(endpoint)}|"></p>
-<p class="line" th:text="|HTTP 메서드: ${@facts.fact(endpoint.path('httpMethod'))}|"></p>
-<p class="line" th:text="|경로: ${@facts.fact(endpoint.path('path'))}|"></p>
-<p class="line" th:text="|확인 상태: ${@facts.status(endpoint)} ${@facts.evidence(endpoint)}|"></p>
+<p class="line" th:text="|검증 범위: ${@endpointsFormatter.verificationScope(endpoint)}|"></p>
+<p class="line" th:text="|HTTP 메서드: ${@facts.valueWithEvidence(endpoint.path('httpMethod'))}|"></p>
+<p class="line" th:text="|경로: ${@facts.valueWithEvidence(endpoint.path('path'))}|"></p>
+<p class="line" th:text="|확인 상태: ${@facts.statusWithReason(endpoint)} ${@facts.evidence(endpoint)}|"></p>
 <p class="line" th:with="file=${@endpointsFormatter.responseFile(endpoint.path('responseCheck'))}">응답 확인: <a th:if="${file != null}" th:href="|/responses/${file}|" th:text="${@endpointsFormatter.responseCheck(endpoint.path('responseCheck'))}"></a><span th:if="${file == null}" th:text="${@endpointsFormatter.responseCheck(endpoint.path('responseCheck'))}"></span></p>
-<p class="line" th:each="c : ${@endpointsFormatter.comparison(endpoint.path('responseCheck'))}" th:text="|코드와 실제 응답: ${c}|"></p>
+<p class="line" th:each="difference : ${@endpointsFormatter.responseDifferences(endpoint.path('responseCheck'))}" th:text="|코드와 실제 응답: ${difference}|"></p>
 </header>
 <section th:replace="~{items :: descriptions(${descriptions})}"></section>
 <h2>게이트웨이 외부 경로</h2>
-<p class="line" th:each="x : ${endpoint.path('externalPaths')}"
-   th:text="|${x.path('path').asText()} (경로 규칙 ${x.path('routeId').asText()}) ${@facts.status(x)} ${@facts.evidence(x)} · 토큰 필요: ${@facts.fact(x.path('tokenRequired'))}|"></p>
-<p class="line" th:text="|토큰 필요(기본 경로): ${@facts.fact(endpoint.path('tokenRequired'))}|"></p>
-<p class="line" th:each="r : ${rejections}" th:if="${@facts.plain(endpoint.path('tokenRequired')) == 'true'}" th:text="|토큰이 필요한 경로의 Gateway 거부: ${@errorsFormatter.rejection(r)}|"></p>
+<p class="line" th:each="externalPath : ${endpoint.path('externalPaths')}"
+   th:text="|${externalPath.path('path').asText()} (경로 규칙 ${externalPath.path('routeId').asText()}) ${@facts.statusWithReason(externalPath)} ${@facts.evidence(externalPath)} · 토큰 필요: ${@facts.valueWithEvidence(externalPath.path('tokenRequired'))}|"></p>
+<p class="line" th:text="|토큰 필요(기본 경로): ${@facts.valueWithEvidence(endpoint.path('tokenRequired'))}|"></p>
+<p class="line" th:each="rejection : ${rejections}" th:if="${@facts.valueOrStatus(endpoint.path('tokenRequired')) == 'true'}" th:text="|토큰이 필요한 경로의 Gateway 거부: ${@errorsFormatter.rejection(rejection)}|"></p>
 <h2>요청</h2>
-<div th:each="p : ${endpoint.path('parameters')}">
-  <p class="line" th:text="|${p.path('name').asText()} (${p.path('kind').asText()}) ${p.path('schema').path('type').asText()} ${@facts.status(p.path('schema'))}|"></p>
-  <p class="line" th:each="l : ${@endpointsFormatter.fields(p.path('schema'))}" th:text="|    ${l}|"></p>
+<div th:each="parameter : ${endpoint.path('parameters')}">
+  <p class="line" th:text="|${parameter.path('name').asText()} (${parameter.path('kind').asText()}) ${parameter.path('schema').path('type').asText()} ${@facts.statusWithReason(parameter.path('schema'))}|"></p>
+  <p class="line" th:each="line : ${@endpointsFormatter.fieldLines(parameter.path('schema'))}" th:text="|    ${line}|"></p>
 </div>
 <h2>응답</h2>
-<p class="line" th:text="|${endpoint.path('response').path('type').asText()} ${@facts.status(endpoint.path('response'))}|"></p>
-<p class="line" th:each="l : ${@endpointsFormatter.fields(endpoint.path('response'))}" th:text="|    ${l}|"></p>
+<p class="line" th:text="|${endpoint.path('response').path('type').asText()} ${@facts.statusWithReason(endpoint.path('response'))}|"></p>
+<p class="line" th:each="line : ${@endpointsFormatter.fieldLines(endpoint.path('response'))}" th:text="|    ${line}|"></p>
 <h2>오류 응답</h2>
 <p th:if="${errors.isEmpty()}">추출한 예외 없음</p>
-<p class="line" th:each="t : ${errors}" th:text="${@errorsFormatter.thrown(t)}"></p>
+<p class="line" th:each="thrownError : ${errors}" th:text="${@errorsFormatter.thrown(thrownError)}"></p>
 <h2>나가는 호출과 발행</h2>
 <p th:if="${flow.forward().isEmpty()}">확인된 호출 없음</p>
-<p class="line step" th:each="s : ${flow.forward()}" th:classappend="${s.from() != endpoint.path('id').asText()} ? 'next'"><span class="node" th:text="${s.from()}"></span> <span class="arrow" th:text="|→ (${s.kind()})|"></span> <span class="node" th:classappend="${s.to() == null} ? 'unknown'" th:text="${@flows.target(s)}"></span> <span th:text="${@flows.stepEvidence(s)}"></span></p>
+<p class="line step" th:each="step : ${flow.forward()}" th:classappend="${step.from() != endpoint.path('id').asText()} ? 'next'"><span class="node" th:text="${step.from()}"></span> <span class="arrow" th:text="|→ (${step.kind()})|"></span> <span class="node" th:classappend="${step.to() == null} ? 'unknown'" th:text="${@flows.targetOrStatus(step)}"></span> <span th:text="${@flows.stepEvidence(step)}"></span></p>
 <h2>부르는 곳</h2>
 <p th:if="${flow.callers().isEmpty()}">확인된 호출 없음</p>
-<p class="line step" th:each="s : ${flow.callers()}"><span class="node" th:text="${s.from()}"></span> <span class="arrow" th:text="|→ (${s.kind()})|"></span> <span class="node" th:classappend="${s.to() == null} ? 'unknown'" th:text="${@flows.target(s)}"></span> <span th:text="${@flows.stepEvidence(s)}"></span></p>
+<p class="line step" th:each="step : ${flow.callers()}"><span class="node" th:text="${step.from()}"></span> <span class="arrow" th:text="|→ (${step.kind()})|"></span> <span class="node" th:classappend="${step.to() == null} ? 'unknown'" th:text="${@flows.targetOrStatus(step)}"></span> <span th:text="${@flows.stepEvidence(step)}"></span></p>
 <section th:replace="~{items :: items(${items})}"></section>
 <script src="/app.js"></script>
 </body>

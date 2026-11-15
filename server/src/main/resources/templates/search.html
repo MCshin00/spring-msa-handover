@@ -14,16 +14,16 @@
 </form>
 <section th:if="${results != null}">
   <h2 th:text="|검색 결과 ${#lists.size(results)}개|"></h2>
-  <div th:each="r : ${results}">
-    <p><a th:href="${r.page()}" th:text="${r.title()}"></a> <span th:text="${r.section()}"></span> <span class="meta" th:text="|점수 ${r.score()}|"></span></p>
-    <p class="meta" th:text="${r.preview()}"></p>
+  <div th:each="result : ${results}">
+    <p><a th:href="${result.page()}" th:text="${result.title()}"></a> <span th:text="${result.section()}"></span> <span class="meta" th:text="|점수 ${result.score()}|"></span></p>
+    <p class="meta" th:text="${result.preview()}"></p>
   </div>
 </section>
 <section th:if="${answer != null}">
   <h2 th:text="|${answer.status()}|"></h2>
   <p class="line" th:if="${answer.answer() != null}" th:text="${answer.answer()}"></p>
   <p class="line" th:if="${answer.reason() != null}" th:text="|보류·오류 이유: ${answer.reason()}|"></p>
-  <ul><li th:each="c : ${answer.citations()}"><span th:text="|${c.id()} |"></span><a th:href="${c.page()}" th:text="${c.title()}"></a> <span th:text="${c.section()}"></span></li></ul>
+  <ul><li th:each="citation : ${answer.citations()}"><span th:text="|${citation.id()} |"></span><a th:href="${citation.page()}" th:text="${citation.title()}"></a> <span th:text="${citation.section()}"></span></li></ul>
   <p class="meta" th:text="|모델 ${model} · 입력 토큰 ${answer.inputTokens()} · 출력 토큰 ${answer.outputTokens()}|"></p>
 </section>
 </body>

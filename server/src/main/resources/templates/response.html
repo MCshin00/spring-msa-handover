@@ -5,6 +5,6 @@
 <nav class="top"><span><a href="/">처음</a> · <a th:href="|/endpoints/${endpoint}|" th:text="${endpoint}"></a></span><span class="target">[[${target.name()}]] · 고정 커밋 [[${target.shortCommit()}]]</span></nav>
 <h1 th:text="${file}"></h1>
 <p>저장한 응답 기록 원문</p>
-<div class="src"><div th:each="l, i : ${lines}" th:id="|L${i.count}|"><span class="ln" th:text="${i.count}"></span><span th:text="${l}"></span></div></div>
+<div class="src"><div th:each="line, lineStatus : ${lines}" th:id="|L${lineStatus.count}|"><span class="ln" th:text="${lineStatus.count}"></span><span th:text="${line}"></span></div></div>
 </body>
 </html>

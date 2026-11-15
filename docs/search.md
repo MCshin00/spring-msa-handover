@@ -1,6 +1,6 @@
 # 검색과 질의응답
 
-서버가 문서 본문을 어떻게 색인하고 찾는지, 질의응답(`/api/ask`)이 어떻게 답하거나 보류하는지 설명한다. 코드는 `server/src/main/java/io/hotdealwave/server/`의 `Search.java`(색인·검색), `Embeddings.java`(임베딩 저장), `Ask.java`(질의응답), `OpenAiModel.java`(모델 호출)에 있다.
+서버가 문서 본문을 어떻게 색인하고 찾는지, 질의응답(`/api/ask`)이 어떻게 답하거나 보류하는지 설명한다. 코드는 `server/src/main/java/io/hotdealwave/server/`의 `search/service/SearchService.java`(색인·검색), `search/service/EmbeddingStore.java`(임베딩 저장), `ask/service/AskService.java`(질의응답), `client/OpenAiLanguageModel.java`(모델 호출)에 있다.
 
 ```
 [색인]     페이지 본문 -> h2 절 조각 -> 토큰 -> BM25 통계            (서버 메모리, 첫 검색 때)
@@ -112,7 +112,7 @@ RRF 점수   = Σ 1 / (60 + 순위)                       BM25 순위와 임베�
 
 ### 3.2 지시문 규칙
 
-모델에 주는 규칙은 `Ask.java`의 `INSTRUCTIONS`에 있다.
+모델에 주는 규칙은 `ask/service/AskService.java`의 `INSTRUCTIONS`에 있다.
 
 - 주어진 조각만 근거로 쓴다. 상식이나 다른 프로젝트 지식으로 보충하지 않는다.
 - 조각의 상태 표시를 그대로 옮긴다. "확인 안 됨", "저장소에 근거 없음"인 값은 확정된 것처럼 쓰지 않고 상태와 이유를 밝힌다. 출처가 "AI 해석"인 설명·업무 규칙·함정은 AI 해석이라고 밝힌다.
