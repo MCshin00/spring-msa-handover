@@ -82,7 +82,7 @@ spring-msa-handover/
 |
 +-- cli/                    # init·verify·serve. 검증기와 서버를 build/handover.jar 하나로 묶음
 +-- verifier/               # 검증기 (Java 17) -> out/analysis.json, 상태·경고
-+-- server/                 # Spring Boot 서버: 페이지, /api/search, /api/ask, /mcp
++-- server/                 # Spring Boot 서버: 페이지, /api/search, /api/ask, /api/ask/deep, /mcp
 |
 +-- docs/                   # 결정 기록, 형식, 진행 상황, 단계 보고서
 +-- eval/                   # 최종 질문, 결과, 채점
