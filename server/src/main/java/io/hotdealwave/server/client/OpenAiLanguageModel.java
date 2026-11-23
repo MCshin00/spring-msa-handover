@@ -37,6 +37,12 @@ public class OpenAiLanguageModel implements LanguageModel {
             @JsonPropertyDescription("근거로 쓴 조각 번호. 예: [\"C1\", \"C3\"]") List<String> citations,
             @JsonPropertyDescription("질문이 묻는 것에 대한 답이 조각에 없으면 true") boolean abstain) {}
 
+    /** The same fields for the tool-using path, described for answers drawn from tool results too. */
+    private record ToolOutput(
+            @JsonPropertyDescription("질문에 대한 답. 보류할 때는 확인할 수 없는 이유") String answer,
+            @JsonPropertyDescription("근거로 쓴 조각과 도구 결과의 번호. 예: [\"C1\", \"C9\"]") List<String> citations,
+            @JsonPropertyDescription("도구로 찾아본 뒤에도 질문의 핵심에 대한 답이 없으면 true") boolean abstain) {}
+
     private final OpenAIClient client;
 
     public OpenAiLanguageModel(@Value("${OPENAI_API_KEY:#{null}}") String key) {
@@ -77,7 +83,7 @@ public class OpenAiLanguageModel implements LanguageModel {
                 .reasoning(Reasoning.builder().effort(ReasoningEffort.NONE).build()).maxOutputTokens(MAX_OUTPUT_TOKENS)
                 .toolChoice(allowTools ? ToolChoiceOptions.AUTO : ToolChoiceOptions.NONE);
         for (var tool : tools) builder.addTool(functionTool(tool));
-        var response = client.responses().create(builder.text(Output.class, JsonSchemaLocalValidation.YES).build());
+        var response = client.responses().create(builder.text(ToolOutput.class, JsonSchemaLocalValidation.YES).build());
         var usage = response.usage();
         long inputTokens = usage.map(usageValue -> usageValue.inputTokens()).orElse(0L);
         long cachedTokens = usage.map(usageValue -> usageValue.inputTokensDetails().cachedTokens()).orElse(0L);

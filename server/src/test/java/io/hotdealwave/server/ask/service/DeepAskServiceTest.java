@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,7 +93,8 @@ class DeepAskServiceTest {
         var marks = new ArrayList<>(List.of("C9"));
         marks.addAll(Collections.nCopies(14, "이미 C9"));
         marks.add("상한");
-        for (int i = 0; i < 16; i++) assertTrue(page.contains("get_page(/repository) → " + marks.get(i)));
+        var steps = Pattern.compile("<li>(get_page\\(/repository\\) → [^<]*)</li>").matcher(page).results().map(match -> match.group(1)).toList();
+        assertEquals(marks.stream().map(mark -> "get_page(/repository) → " + mark).toList(), steps);
         assertTrue(page.contains("답 · 상한에 닿음"));
         assertTrue(page.contains("자세히 찾기"));
     }

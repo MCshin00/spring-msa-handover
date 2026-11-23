@@ -9,7 +9,7 @@
   <button type="submit">검색</button>
 </form>
 <form method="post" action="/search">
-  <input type="text" name="question" size="60" th:value="${question}" placeholder="질문 하나 (모델을 한 번 부른다)">
+  <input type="text" name="question" size="60" th:value="${question}" placeholder="질문 하나 (질문: 모델을 한 번 부른다 · 자세히 찾기: 도구를 15번까지 부른다)">
   <button type="submit">질문</button>
   <button type="submit" formaction="/search/deep">자세히 찾기</button>
 </form>
