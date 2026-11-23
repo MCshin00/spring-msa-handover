@@ -11,6 +11,7 @@
 <form method="post" action="/search">
   <input type="text" name="question" size="60" th:value="${question}" placeholder="질문 하나 (모델을 한 번 부른다)">
   <button type="submit">질문</button>
+  <button type="submit" formaction="/search/deep">자세히 찾기</button>
 </form>
 <section th:if="${results != null}">
   <h2 th:text="|검색 결과 ${#lists.size(results)}개|"></h2>
@@ -25,6 +26,16 @@
   <p class="line" th:if="${answer.reason() != null}" th:text="|보류·오류 이유: ${answer.reason()}|"></p>
   <ul><li th:each="citation : ${answer.citations()}"><span th:text="|${citation.id()} |"></span><a th:href="${citation.page()}" th:text="${citation.title()}"></a> <span th:text="${citation.section()}"></span></li></ul>
   <p class="meta" th:text="|모델 ${model} · 입력 토큰 ${answer.inputTokens()} · 출력 토큰 ${answer.outputTokens()}|"></p>
+</section>
+<section th:if="${deep != null}">
+  <h2 th:text="|${deep.status()}${deep.reason() != null ? ' · ' + deep.reason() : ''} · ${deep.limitReached() ? '상한에 닿음' : '상한에 닿지 않음'}|"></h2>
+  <p class="line" th:if="${deep.answer() != null}" th:text="${deep.answer()}"></p>
+  <ul><li th:each="citation : ${deep.citations()}"><span th:text="|${citation.id()} |"></span><th:block th:if="${citation.page() != null}"><a th:href="${citation.page()}" th:text="${citation.title()}"></a> <span th:text="${citation.section()}"></span></th:block><span th:if="${citation.page() == null}" th:text="|${citation.tool()}(${citation.argument()})|"></span></li></ul>
+  <th:block th:if="${!deep.steps().isEmpty()}">
+    <h3>거친 순서</h3>
+    <ol><li th:each="step : ${deep.steps()}" th:text="|${step.tool()}(${step.argument()}) → ${step.mark()}|"></li></ol>
+  </th:block>
+  <p class="meta" th:text="|모델 ${model} · 모델 호출 ${deep.modelCalls()}번 · 도구 호출 ${deep.toolCalls()}번 · 입력 토큰 ${deep.inputTokens()} (캐시 ${deep.cachedInputTokens()}) · 출력 토큰 ${deep.outputTokens()} · 걸린 시간 ${#numbers.formatDecimal(deep.elapsedMillis() / 1000.0, 1, 1)}초|"></p>
 </section>
 </body>
 </html>

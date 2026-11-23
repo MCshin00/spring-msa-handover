@@ -1,12 +1,18 @@
 package io.hotdealwave.server.ask.service;
 
 import io.hotdealwave.server.client.LanguageModel;
+import io.hotdealwave.server.client.ModelInput;
 import io.hotdealwave.server.client.ModelReply;
+import io.hotdealwave.server.client.ModelTurn;
 import io.hotdealwave.server.client.OpenAiLanguageModel;
+import io.hotdealwave.server.client.ToolDefinition;
 import io.hotdealwave.server.search.service.EmbeddingStore;
 import io.hotdealwave.server.search.service.SearchService;
 import io.hotdealwave.server.search.service.Tokenizer;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +46,17 @@ class AskServiceTest {
             lastInput = input;
             if (failure != null) throw failure;
             return next;
+        }
+
+        /** Turns for the deep path, in order, with each call's input and whether tools were allowed. */
+        final Deque<ModelTurn> turns = new ArrayDeque<>();
+        final List<List<ModelInput>> inputs = new ArrayList<>();
+        final List<Boolean> toolChoices = new ArrayList<>();
+
+        @Override public ModelTurn replyWithTools(String instructions, List<ToolDefinition> tools, List<ModelInput> input, boolean allowTools) {
+            inputs.add(List.copyOf(input));
+            toolChoices.add(allowTools);
+            return turns.remove();
         }
 
         RuntimeException embedFailure;

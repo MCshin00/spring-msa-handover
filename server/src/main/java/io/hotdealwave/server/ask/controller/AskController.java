@@ -2,7 +2,9 @@ package io.hotdealwave.server.ask.controller;
 
 import io.hotdealwave.server.ask.dto.AskRequestDto;
 import io.hotdealwave.server.ask.dto.AskResponseDto;
+import io.hotdealwave.server.ask.dto.DeepAskResponseDto;
 import io.hotdealwave.server.ask.service.AskService;
+import io.hotdealwave.server.ask.service.DeepAskService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class AskController {
     private final AskService askService;
+    private final DeepAskService deepAskService;
 
     @PostMapping("/api/ask")
     ResponseEntity<AskResponseDto> ask(@RequestBody AskRequestDto question) { return ResponseEntity.ok(askService.ask(question.question())); }
+
+    @PostMapping("/api/ask/deep")
+    ResponseEntity<DeepAskResponseDto> deepAsk(@RequestBody AskRequestDto question) {
+        return ResponseEntity.ok(deepAskService.ask(question.question()));
+    }
 }

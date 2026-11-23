@@ -27,6 +27,17 @@ public class McpToolService {
     private final FlowFormatter flowFormatter;
     private final ConfirmedLegend confirmedLegend;
 
+    /** A tool's result text, or null when nothing is found. */
+    public String run(McpTool tool, String argument) {
+        return switch (tool) {
+            case FIND_ENDPOINT -> findEndpoint(argument);
+            case TRACE_FLOW -> traceFlow(argument);
+            case FIND_SUBSCRIBERS -> findSubscribers(argument);
+            case SEARCH_DOCS -> searchDocs(argument);
+            case GET_PAGE -> page(argument);
+        };
+    }
+
     public String findSubscribers(String name) { return page(PageKind.TOPIC.getPath() + name); }
 
     public String page(String path) {

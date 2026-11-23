@@ -4,15 +4,22 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.core.JsonSchemaLocalValidation;
+import com.openai.core.JsonValue;
 import com.openai.models.Reasoning;
 import com.openai.models.ReasoningEffort;
 import com.openai.models.embeddings.Embedding;
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import com.openai.models.embeddings.EmbeddingModel;
+import com.openai.models.responses.EasyInputMessage;
+import com.openai.models.responses.FunctionTool;
 import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseFunctionToolCall;
+import com.openai.models.responses.ResponseInputItem;
+import com.openai.models.responses.ToolChoiceOptions;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +59,49 @@ public class OpenAiLanguageModel implements LanguageModel {
         var usage = response.usage();
         return new ModelReply(output.answer(), output.citations(), output.abstain(),
                 usage.map(usageValue -> usageValue.inputTokens()).orElse(0L), usage.map(usageValue -> usageValue.outputTokens()).orElse(0L));
+    }
+
+    @Override
+    public ModelTurn replyWithTools(String instructions, List<ToolDefinition> tools, List<ModelInput> input, boolean allowTools) {
+        requireKey();
+        var items = new ArrayList<ResponseInputItem>();
+        for (var item : input) {
+            if (item instanceof ModelInput.Text text) items.add(ResponseInputItem.ofEasyInputMessage(EasyInputMessage.builder()
+                    .role(EasyInputMessage.Role.USER).content(text.text()).build()));
+            else if (item instanceof ModelInput.ToolCall call) items.add(ResponseInputItem.ofFunctionCall(ResponseFunctionToolCall.builder()
+                    .callId(call.callId()).name(call.tool()).arguments(call.arguments()).build()));
+            else if (item instanceof ModelInput.ToolResult result) items.add(ResponseInputItem.ofFunctionCallOutput(
+                    ResponseInputItem.FunctionCallOutput.builder().callId(result.callId()).output(result.output()).build()));
+        }
+        var builder = ResponseCreateParams.builder().model(MODEL).instructions(instructions).inputOfResponse(items)
+                .reasoning(Reasoning.builder().effort(ReasoningEffort.NONE).build()).maxOutputTokens(MAX_OUTPUT_TOKENS)
+                .toolChoice(allowTools ? ToolChoiceOptions.AUTO : ToolChoiceOptions.NONE);
+        for (var tool : tools) builder.addTool(functionTool(tool));
+        var response = client.responses().create(builder.text(Output.class, JsonSchemaLocalValidation.YES).build());
+        var usage = response.usage();
+        long inputTokens = usage.map(usageValue -> usageValue.inputTokens()).orElse(0L);
+        long cachedTokens = usage.map(usageValue -> usageValue.inputTokensDetails().cachedTokens()).orElse(0L);
+        long outputTokens = usage.map(usageValue -> usageValue.outputTokens()).orElse(0L);
+        // Any tool call makes this a tool turn, and text in the same response is not used.
+        var calls = response.output().stream().filter(item -> item.isFunctionCall()).map(item -> item.asFunctionCall())
+                .map(call -> new ModelInput.ToolCall(call.callId(), call.name(), call.arguments())).toList();
+        if (!calls.isEmpty()) return new ModelTurn(calls, null, inputTokens, cachedTokens, outputTokens);
+        var output = response.output().stream().flatMap(item -> item.message().stream())
+                .flatMap(message -> message.content().stream()).flatMap(content -> content.outputText().stream())
+                .findFirst().orElseThrow(() -> new IllegalStateException(LanguageModelExceptionMessage.MISSING_ANSWER.getText()));
+        return new ModelTurn(List.of(), new ModelReply(output.answer(), output.citations(), output.abstain(), inputTokens, outputTokens),
+                inputTokens, cachedTokens, outputTokens);
+    }
+
+    /** A strict function tool with one required string argument. */
+    private static FunctionTool functionTool(ToolDefinition tool) {
+        var parameters = FunctionTool.Parameters.builder()
+                .putAdditionalProperty("type", JsonValue.from("object"))
+                .putAdditionalProperty("properties", JsonValue.from(Map.of(tool.argument(), Map.of("type", "string", "description",
+                        tool.argumentDescription()))))
+                .putAdditionalProperty("required", JsonValue.from(List.of(tool.argument())))
+                .putAdditionalProperty("additionalProperties", JsonValue.from(false)).build();
+        return FunctionTool.builder().name(tool.name()).description(tool.description()).parameters(parameters).strict(true).build();
     }
 
     @Override

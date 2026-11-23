@@ -1,6 +1,7 @@
 package io.hotdealwave.server.search.controller;
 
 import io.hotdealwave.server.ask.service.AskService;
+import io.hotdealwave.server.ask.service.DeepAskService;
 import io.hotdealwave.server.client.LanguageModel;
 import io.hotdealwave.server.search.service.SearchService;
 import lombok.AccessLevel;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 class SearchPageController {
     private final SearchService searchService;
     private final AskService askService;
+    private final DeepAskService deepAskService;
     private final LanguageModel languageModel;
 
     @GetMapping("/search")
@@ -30,6 +32,14 @@ class SearchPageController {
     String ask(@RequestParam String question, Model model) {
         model.addAttribute("question", question);
         model.addAttribute("answer", askService.ask(question));
+        model.addAttribute("model", languageModel.name());
+        return "search";
+    }
+
+    @PostMapping("/search/deep")
+    String deepAsk(@RequestParam String question, Model model) {
+        model.addAttribute("question", question);
+        model.addAttribute("deep", deepAskService.ask(question));
         model.addAttribute("model", languageModel.name());
         return "search";
     }

@@ -7,8 +7,6 @@ import io.hotdealwave.server.ask.dto.AskResponseDto;
 import io.hotdealwave.server.ask.dto.CitedChunkDto;
 import io.hotdealwave.server.client.LanguageModel;
 import io.hotdealwave.server.client.ModelReply;
-import io.hotdealwave.server.page.PageKind;
-import io.hotdealwave.server.page.service.PageService;
 import io.hotdealwave.server.search.dto.SearchResultDto;
 import io.hotdealwave.server.search.service.SearchService;
 import java.util.*;
@@ -28,20 +26,17 @@ public class AskService {
             - 답에 쓴 근거 조각의 번호(C1~C8)를 citations에 모두 적는다.
             - 한국어로 간결하게 답한다.""";
 
-    /** What the model reads under one number: an endpoint or topic page whole, otherwise the found section. */
-    private record Chunk(String page, String title, String section, String text) {}
-
     private final SearchService searchService;
-    private final PageService pageService;
+    private final StartChunks startChunks;
     private final LanguageModel languageModel;
     private final CitationChecker citationChecker;
 
     private final String instructions;
 
-    AskService(SearchService searchService, PageService pageService, LanguageModel languageModel, VerifierOutput verifierOutput,
+    AskService(SearchService searchService, StartChunks startChunks, LanguageModel languageModel, VerifierOutput verifierOutput,
             CitationChecker citationChecker) {
         this.searchService = searchService;
-        this.pageService = pageService;
+        this.startChunks = startChunks;
         this.languageModel = languageModel;
         this.citationChecker = citationChecker;
         this.instructions = INSTRUCTIONS.formatted(verifierOutput.target().name());
@@ -55,22 +50,11 @@ public class AskService {
             return new AskResponseDto(AnswerStatus.ERROR, null, List.of(), AnswerReason.EMBEDDING_FAILURE.format(exception.getMessage()), 0, 0);
         }
         if (results.isEmpty()) return new AskResponseDto(AnswerStatus.ABSTAIN, null, List.of(), AnswerReason.NO_RESULTS.getText(), 0, 0);
-        var chunks = new LinkedHashMap<String, Chunk>();
-        var input = new StringBuilder("조각:\n");
-        for (var result : results) {
-            String id = "C" + (chunks.size() + 1);
-            // Endpoint and topic pages go whole so fields and connection states come along with whichever section matched.
-            var chunk = result.page().startsWith(PageKind.ENDPOINT.getPath()) || result.page().startsWith(PageKind.TOPIC.getPath())
-                    ? new Chunk(result.page(), result.title(), "", pageService.text(result.page()))
-                    : new Chunk(result.page(), result.title(), result.section(), searchService.sectionText(result));
-            chunks.put(id, chunk);
-            input.append('[').append(id).append("] ").append(chunk.title()).append(chunk.section().isEmpty() ? "" : " — " + chunk.section())
-                    .append(" (").append(chunk.page()).append(")\n").append(chunk.text()).append("\n\n");
-        }
-        input.append("질문: ").append(question);
+        var start = startChunks.build(results, question);
+        var chunks = start.chunks();
         ModelReply reply;
         try {
-            reply = languageModel.reply(instructions, input.toString());
+            reply = languageModel.reply(instructions, start.input());
         } catch (RuntimeException exception) {
             return new AskResponseDto(AnswerStatus.ERROR, null, List.of(), AnswerReason.MODEL_FAILURE.format(exception.getMessage()), 0, 0);
         }
