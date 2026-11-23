@@ -10,18 +10,23 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -37,6 +42,7 @@ class DeepAskServiceTest {
     @Autowired AskService askService;
     @Autowired AskServiceTest.FakeModel model;
     @Autowired MockMvc mvc;
+    @MockitoSpyBean CitationChecker citationChecker;
 
     @BeforeEach void reset() {
         model.turns.clear();
@@ -72,16 +78,29 @@ class DeepAskServiceTest {
                 .andExpect(jsonPath("$.toolCalls").value(1));
         assertEquals(askInput, ((ModelInput.Text) model.inputs.get(0).get(0)).text());
         assertTrue(result(1, 2).output().startsWith("[C9] get_page(/services/payment-service)\n확인됨의 뜻"));
+        // The remaining count goes to the model only; the numbered text the citation check reads stays without it.
+        assertTrue(result(1, 2).output().endsWith("\n남은 도구 호출: 14번"));
+        @SuppressWarnings("unchecked") ArgumentCaptor<Map<String, String>> numbered = ArgumentCaptor.forClass(Map.class);
+        verify(citationChecker).check(any(), numbered.capture());
+        assertEquals(result(1, 2).output(), numbered.getValue().get("C9") + "\n남은 도구 호출: 14번");
     }
 
     @Test void pageWholeInTheStartIsNotReadAgain() {
-        model.turns.add(calls("get_page", "page", "/endpoints/order-service.OrderController.createOrder", 1));
+        model.turns.add(new ModelTurn(List.of(
+                new ModelInput.ToolCall("call_0", "get_page", "{\"page\":\"/endpoints/order-service.OrderController.createOrder\"}"),
+                new ModelInput.ToolCall("call_1", "search_docs", "{\"query\":\"createOrder\"}"),
+                new ModelInput.ToolCall("call_2", "search_docs", "{\"query\":\"CreateOrder\"}")), null, 100, 0, 10));
         model.turns.add(answer("주문 생성은 OrderController.java:40에서 받는다.", "C1"));
         var answer = deepAskService.ask("createOrder");
         assertEquals("답", answer.status().getText());
         assertEquals("이미 C1", answer.steps().get(0).mark());
         assertTrue(result(1, 2).output().contains("C1"));
         assertFalse(result(1, 2).output().contains("OrderController.java:40"));
+        // A search hit whose whole page already has a number says so; a second search with only the same pages says that too.
+        assertTrue(Pattern.compile("페이지: /endpoints/order-service\\.OrderController\\.createOrder · 점수 [0-9.]+ · 이미 C1에 있음\n")
+                .matcher(result(1, 4).output()).find());
+        assertFalse(result(1, 4).output().contains("앞 검색과 같은 페이지만 나왔다."));
+        assertTrue(result(1, 6).output().endsWith("\n앞 검색과 같은 페이지만 나왔다.\n남은 도구 호출: 12번"));
     }
 
     @Test void reachingTheLimitTurnsToolsOffForTheFinalAnswer() throws Exception {

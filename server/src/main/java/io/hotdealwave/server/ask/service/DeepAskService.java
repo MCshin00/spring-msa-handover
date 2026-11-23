@@ -25,6 +25,7 @@ import io.hotdealwave.server.search.dto.SearchResultDto;
 import io.hotdealwave.server.search.service.SearchService;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -38,10 +39,11 @@ public class DeepAskService {
             너는 %s 저장소를 넘겨받은 개발자의 질문에, 저장소 분석 문서의 조각과 도구로 찾은 결과를 근거로 답하는 도우미다.
             규칙:
             - 주어진 조각과 도구 결과만 근거로 쓴다. 상식이나 다른 프로젝트 지식으로 보충하지 않는다.
-            - 상태 표시를 그대로 옮긴다. "확인 안 됨", "저장소에 근거 없음"인 값은 확정된 것처럼 쓰지 않고 그 상태와 이유를 밝힌다. 출처가 "AI 해석"인 설명·업무 규칙·함정은 AI 해석이라고 밝힌다.
-            - 근거는 조각이나 도구 결과에 적힌 `파일:줄`을 그대로 옮겨 붙인다. 거기 없는 `파일:줄`을 만들지 않는다.
+            - 상태 표시는 "확인 안 됨", "저장소에 근거 없음", "AI 해석"이라는 글자 그대로 쓰고 풀어 쓰지 않는다. "확인 안 됨", "저장소에 근거 없음"인 값은 확정된 것처럼 쓰지 않고 그 이유를 밝힌다. 출처가 "AI 해석"인 설명·업무 규칙·함정은 "AI 해석"이라고 밝힌다.
+            - 답에 쓴 사실마다 그 근거 `파일:줄`을 조각이나 도구 결과에 적힌 그대로 옮겨 붙인다. 거기 없는 `파일:줄`을 만들지 않는다.
             - 질문이 묻는 것 가운데 확인되지 않는 부분이 있으면 먼저 도구로 더 찾는다.
             - search_docs 결과는 근거로 쓰지 않는다. 찾은 페이지의 본문을 읽은 뒤 그 번호를 인용한다.
+            - 검색 결과에 "이미 C번호에 있음"이라고 표시된 페이지는 다시 읽지 않고 그 번호를 인용한다.
             - 근거가 모이면 더 찾지 않고 abstain을 false로 해 결론부터 답한다.
             - 도구로 찾아본 뒤에도 확인되지 않는 부분은 답 안에서 그 부분만 확인할 수 없다고 밝힌다.
             - 도구로 찾아본 뒤에도 질문의 핵심에 대한 답이 없으면 abstain을 true로 하고 answer에 확인할 수 없는 이유를 짧게 쓴다.
@@ -52,6 +54,8 @@ public class DeepAskService {
     /** Input tokens of one call after which tools are turned off; gpt-6-luna charges double over 272,000. */
     static final long MAX_INPUT_TOKENS = 200_000;
     private static final List<ToolDefinition> TOOLS = Arrays.stream(McpTool.values()).map(McpTool::definition).toList();
+    /** The page line of each search_docs hit, as McpToolService.searchDocs writes it. */
+    private static final Pattern SEARCH_PAGE = Pattern.compile("^페이지: (\\S+) · 점수 ");
 
     /** A numbered text the citation check reads: a starting chunk, or a tool result with its tool and argument. */
     private record Numbered(String text, String page, String title, String section, String tool, String argument) {}
@@ -106,6 +110,8 @@ public class DeepAskService {
         final Map<String, String> pageNumbers = new HashMap<>();
         /** tool(argument) to the number or mark it came to. */
         final Map<String, String> seen = new HashMap<>();
+        /** Pages earlier search_docs calls of this request returned. */
+        final Set<String> searchedPages = new HashSet<>();
         final List<ModelInput> input = new ArrayList<>();
         final List<ToolStepDto> steps = new ArrayList<>();
         final List<AskTrace.ToolCall> toolTraces = new ArrayList<>();
@@ -189,7 +195,7 @@ public class DeepAskService {
             }
             if (tool.get() == McpTool.SEARCH_DOCS) {
                 seen.put(key, StepMark.SEARCH_RESULT.getText());
-                return step(call.tool(), argument, StepMark.SEARCH_RESULT.getText(), text);
+                return step(call.tool(), argument, StepMark.SEARCH_RESULT.getText(), marked(text));
             }
             String id = "C" + (numbered.size() + 1);
             String output = "[" + id + "] " + key + "\n" + text;
@@ -205,10 +211,33 @@ public class DeepAskService {
             return step(tool, argument, StepMark.ALREADY.format(id), ToolResultMessage.ALREADY_NUMBERED.format(id));
         }
 
+        /** Records the step and returns what the model gets: the output and the calls left, which numbered texts do not carry. */
         private String step(String tool, String argument, String mark, String output) {
             steps.add(new ToolStepDto(tool, argument, mark));
             toolTraces.add(new AskTrace.ToolCall(tool, argument, mark, output.length()));
-            return output;
+            return output + "\n" + ToolResultMessage.REMAINING.format(Math.max(0, MAX_TOOL_CALLS - toolCalls));
+        }
+
+        /**
+         * A search_docs result with each hit whose whole page already has a number marked, and a note when every hit came up in an earlier
+         * search of this request.
+         */
+        private String marked(String text) {
+            var pages = new ArrayList<String>();
+            var lines = new ArrayList<String>();
+            for (var line : text.split("\n", -1)) {
+                var matcher = SEARCH_PAGE.matcher(line);
+                if (matcher.find()) {
+                    pages.add(matcher.group(1));
+                    String id = pageNumbers.get(matcher.group(1));
+                    if (id != null) line += ToolResultMessage.PAGE_ALREADY_NUMBERED.format(id);
+                }
+                lines.add(line);
+            }
+            String marked = String.join("\n", lines);
+            if (!searchedPages.isEmpty() && searchedPages.containsAll(pages)) marked += "\n" + ToolResultMessage.SAME_PAGES.getText();
+            searchedPages.addAll(pages);
+            return marked;
         }
 
         /** The one endpoint page find_endpoint read, or null when it found several. */
